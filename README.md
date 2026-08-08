@@ -19,6 +19,7 @@ YomkExtensions 是 YomkServer 的扩展模块仓库，提供了各种功能丰�
 YomkExtensions/
 ├── YomkMath/          # 数学计算扩展（基础运算、高级函数等）
 ├── YomkLogAnalyzer/   # 日志分析扩展（日志解析、统计、告警等）
+├── YomkRpc/           # RPC 分布式通信扩展（开发中）
 └── ...                # 更多扩展将持续添加
 ```
 
