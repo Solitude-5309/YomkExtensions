@@ -5,6 +5,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_NAME="YomkRpc"
 BUILD_DIR="${SCRIPT_DIR}/build"
+MSG_DIR="${SCRIPT_DIR}/msg"
 INSTALL_DIR="${SCRIPT_DIR}/install"
 TEST_DIR="${SCRIPT_DIR}/test"
 TEST_BUILD_DIR="${TEST_DIR}/build"
@@ -20,6 +21,7 @@ else
 fi
 
 # 编译安装主库
+echo "步骤 1/3: 编译 YomkRpc 主库"
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}" || return 1
 
@@ -37,8 +39,46 @@ if [ $? -ne 0 ]; then
     return 1
 fi
 
+cd "${_ORIG_DIR}"
+
+# ========== 步骤 2/3: 编译 msg 子项目 ==========
+echo ""
+echo "步骤 2/3: 编译 YomkRpc/msg"
+if [ -d "${MSG_DIR}" ]; then
+    MSG_BUILD_DIR="${MSG_DIR}/build"
+    mkdir -p "${MSG_BUILD_DIR}"
+    cd "${MSG_BUILD_DIR}" || return 1
+    
+    echo "配置 msg 项目..."
+    cmake "${MSG_DIR}" \
+        -DCMAKE_PREFIX_PATH="~/YomkServer/install" \
+        -DCMAKE_INSTALL_PREFIX="~/YomkServer/install" \
+        -DCMAKE_BUILD_TYPE="Release"
+    
+    if [ $? -ne 0 ]; then
+        echo "msg cmake 配置失败"
+        cd "${_ORIG_DIR}"
+        return 1
+    fi
+    
+    echo "编译 msg 项目..."
+    cmake --build . --config Release --target install
+    if [ $? -ne 0 ]; then
+        echo "msg 编译失败"
+        cd "${_ORIG_DIR}"
+        return 1
+    fi
+    
+    echo "✅ msg 编译完成"
+    cd "${_ORIG_DIR}" || { echo "Warning: cd failed"; exit 1; }
+else
+    echo "跳过: msg 目录不存在 (${MSG_DIR})"
+fi
+
 # 编译测试程序
 if [ "${BUILD_TEST}" = "ON" ]; then
+    echo ""
+    echo "步骤 3/3: 编译测试程序"
     mkdir -p "${TEST_BUILD_DIR}"
     cd "${TEST_BUILD_DIR}" || return 1
 
@@ -84,7 +124,10 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     "./TestYomkRpc"
 fi
 
-cd "${_ORIG_DIR}"
+# 返回原目录
+cd "${_ORIG_DIR}" || { echo "Warning: cd failed"; exit 1; }
 unset _ORIG_DIR
 
-echo "编译完成"
+echo "======================================="
+echo "✅ 所有编译已完成"
+echo "======================================="

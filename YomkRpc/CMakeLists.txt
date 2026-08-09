@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(YomkRpc VERSION 1.0.0 LANGUAGES CXX)
+project(YomkRpc VERSION 0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -50,4 +50,12 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
     DESTINATION lib/cmake/${PROJECT_NAME}
+)
+
+install(DIRECTORY thirdparty/Fast-DDS-3.6.1/install/
+    DESTINATION .
+)
+
+install(DIRECTORY thirdparty/Fast-DDS-Gen-4.3.0/
+    DESTINATION .
 )
