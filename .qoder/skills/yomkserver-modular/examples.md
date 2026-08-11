@@ -167,11 +167,21 @@ constexpr const char *const CTX_CONFIG_PATH = "config_path";
 #pragma once
 #include <YomkServer/YomkAPI.h>
 
+// 定义完所有的结构体后，统一注册YomkMsg
 // ConfigService 消息包
-struct ConfigKey { std::string key; };
-YomkMsg(ConfigKey, YConfigKey, req)
+struct ConfigKey 
+{ 
+    std::string key; 
+};
 
-struct ConfigKeyValue { std::string key; std::string value; };
+struct ConfigKeyValue 
+{ 
+    std::string key; 
+    std::string value; 
+};
+
+// clang-format off
+YomkMsg(ConfigKey, YConfigKey, req)
 YomkMsg(ConfigKeyValue, YConfigKeyValue, req)
 ```
 
@@ -425,11 +435,23 @@ ProjectName
 
 ### 1. 添加消息包（msgs/YomkMsgs.h 追加）
 ```cpp
-// UserService 消息包
-struct UserQuery { std::string userId; };
-YomkMsg(UserQuery, YUserQuery, req)
 
-struct UserInfo { std::string userId; std::string name; int age; };
+// 定义完所有的结构体后，统一注册YomkMsg
+// UserService 消息包
+struct UserQuery 
+{ 
+    std::string userId; 
+};
+
+struct UserInfo 
+{ 
+    std::string userId; 
+    std::string name; 
+    int age; 
+};
+
+// clang-format off
+YomkMsg(UserQuery, YUserQuery, req)
 YomkMsg(UserInfo, YUserInfo, d)
 ```
 
@@ -638,8 +660,16 @@ ExtensionName/
 
 using namespace yomk;
 
+// 定义完所有的结构体后，统一注册YomkMsg
 // 请求消息包：运算符 + 两个操作数
-struct ExtOp { std::string op; double a; double b; };
+struct ExtOp 
+{ 
+    std::string op; 
+    double a; 
+    double b; 
+};
+
+// clang-format off
 YomkMsg(ExtOp, YExtOp, req)
 
 class XxxService : public YomkService
