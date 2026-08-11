@@ -1,4 +1,4 @@
-#include "FastDDSManager.h"
+#include "FastDDSNode.h"
 
 #include <fastdds/dds/core/status/StatusMask.hpp>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
@@ -8,7 +8,7 @@
 using namespace eprosima::fastdds::dds;
 
 // 订阅监听器（非模板，使用注册时传入的数据包缓冲）
-class FastDDSManager::SubListener : public DataReaderListener
+class FastDDSNode::SubListener : public DataReaderListener
 {
 public:
     SubListener(void *data, DataCallback cb)
@@ -33,9 +33,9 @@ private:
     DataCallback callback_;
 };
 
-FastDDSManager::FastDDSManager() = default;
+FastDDSNode::FastDDSNode() = default;
 
-FastDDSManager::~FastDDSManager()
+FastDDSNode::~FastDDSNode()
 {
     // 清理顺序：DataReader/DataWriter → Topic → Publisher/Subscriber → Participant
     if (participant_ != nullptr)
@@ -74,7 +74,7 @@ FastDDSManager::~FastDDSManager()
     }
 }
 
-bool FastDDSManager::setDomainId(uint32_t domainId)
+bool FastDDSNode::setDomainId(uint32_t domainId)
 {
     std::lock_guard<std::mutex> lock(mtx_);
     if (participant_ != nullptr)
@@ -94,7 +94,7 @@ bool FastDDSManager::setDomainId(uint32_t domainId)
     return (publisher_ != nullptr) && (subscriber_ != nullptr);
 }
 
-Topic *FastDDSManager::getOrCreateTopic(const std::string &topicName, const std::string &typeName)
+Topic *FastDDSNode::getOrCreateTopic(const std::string &topicName, const std::string &typeName)
 {
     auto it = topics_.find(topicName);
     if (it != topics_.end())
@@ -115,7 +115,7 @@ Topic *FastDDSManager::getOrCreateTopic(const std::string &topicName, const std:
     return topic;
 }
 
-bool FastDDSManager::registerPubTopic(const std::string &topicName, void *type)
+bool FastDDSNode::registerPubTopic(const std::string &topicName, void *type)
 {
     std::lock_guard<std::mutex> lock(mtx_);
     if (participant_ == nullptr || publisher_ == nullptr || type == nullptr || pubTopics_.count(topicName) > 0)
@@ -153,8 +153,8 @@ bool FastDDSManager::registerPubTopic(const std::string &topicName, void *type)
     return true;
 }
 
-bool FastDDSManager::registerSubTopic(const std::string &topicName, void *type,
-                                      void *data, DataCallback callback)
+bool FastDDSNode::registerSubTopic(const std::string &topicName, void *type,
+                                   void *data, DataCallback callback)
 {
     std::lock_guard<std::mutex> lock(mtx_);
     if (participant_ == nullptr || subscriber_ == nullptr || type == nullptr || data == nullptr || subTopics_.count(topicName) > 0)
@@ -193,7 +193,7 @@ bool FastDDSManager::registerSubTopic(const std::string &topicName, void *type,
     return true;
 }
 
-bool FastDDSManager::publish(const std::string &topicName, const void *data)
+bool FastDDSNode::publish(const std::string &topicName, const void *data)
 {
     std::lock_guard<std::mutex> lock(mtx_);
     auto it = pubTopics_.find(topicName);

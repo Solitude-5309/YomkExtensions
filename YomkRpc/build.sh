@@ -102,8 +102,8 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     # 运行测试
     echo ""
     echo "========== 运行测试程序 =========="
-    "./TestRpc"
-    "./TestFastDDSManager"
+    "./TestRpcService"
+    "./TestFastDDSNode"
 fi
 
 # 返回原目录

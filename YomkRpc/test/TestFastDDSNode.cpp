@@ -1,4 +1,4 @@
-// FastDDSManager 临时验证程序：同一进程内注册发布/订阅主题并收发 MString 数据
+// FastDDSNode 临时验证程序：同一进程内注册发布/订阅主题并收发 MString 数据
 #include <atomic>
 #include <chrono>
 #include <iostream>
@@ -6,13 +6,13 @@
 #include <string>
 #include <thread>
 
-#include <YomkRpc/FastDDSManager.h>
+#include <YomkRpc/FastDDSNode.h>
 #include <YomkRpcMsg/YomkRpcMsg.hpp>
 #include <YomkRpcMsg/YomkRpcMsgPubSubTypes.hpp>
 
 int main()
 {
-    FastDDSManager dds;
+    FastDDSNode dds;
 
     // 1. 设置域 ID，创建参与者
     if (!dds.setDomainId(0))
@@ -54,7 +54,7 @@ int main()
     for (int i = 0; i < 5; ++i)
     {
         YomkRpc::MString msg;
-        msg.data("Hello FastDDSManager " + std::to_string(i));
+        msg.data("Hello FastDDSNode " + std::to_string(i));
         if (!dds.publish("manager_test_topic", &msg))
         {
             std::cerr << "publish failed" << std::endl;

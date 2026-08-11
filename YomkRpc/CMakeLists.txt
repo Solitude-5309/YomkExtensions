@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(YomkRpc VERSION 0.0.8 LANGUAGES CXX)
+project(YomkRpc VERSION 0.0.9 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,8 +23,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # 编译为动态库
 add_library(${PROJECT_NAME} SHARED
-    src/RpcService.cpp
-    src/FastDDSManager.cpp
+    src/YomkRpcService.cpp
+    src/FastDDSNode.cpp
     msg/YomkRpcMsgPubSubTypes.cxx
     msg/YomkRpcMsgTypeObjectSupport.cxx
 )

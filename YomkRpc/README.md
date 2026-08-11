@@ -4,19 +4,16 @@
 
 ## 功能
 
-> ⚠️ **注意**: 本扩展目前处于开发中状态 (WIP)，基础框架已搭建完成，具体 RPC 功能正在实现中。
+基于 YomkServer 框架的 RPC 扩展，集成 FastDDS 提供分布式发布订阅能力。
 
 | URL | 功能 | 说明 |
 |-----|------|------|
-| `/RpcService/version` | 版本查询 | 返回 YomkRpc 扩展版本信息 |
-
-### 预留功能（后续添加）
-
-- [ ] RPC 远程调用机制
-- [ ] 服务注册与发现
-- [ ] 负载均衡
-- [ ] 链路追踪
-- [ ] 序列化/反序列化协议
+| `/YomkRpcService/version` | 版本查询 | 返回 YomkRpc 扩展版本信息 |
+| `/YomkRpcService/create_node` | 创建节点 | 传入 `DDSNode{domainId, nodeName}`，每节点一个独立 DDS 参与者 |
+| `/YomkRpcService/delete_node` | 删除节点 | 销毁节点及其全部 DDS 实体，不存在的节点返回错误 |
+| `/YomkRpcService/register_pub_topic` | 注册发布主题 | 传入 `DDSTopic{nodeName, topicName, type}`，type 为 PubSubType 实例指针 |
+| `/YomkRpcService/register_sub_topic` | 注册订阅主题 | 传入 `DDSSubRequest{nodeName, topicName, type, data, callback}` |
+| `/YomkRpcService/publish` | 发布数据 | 传入 `DDSPublish{nodeName, topicName, data}`，data 为数据实例指针 |
 
 ## 前置条件
 
@@ -34,17 +31,25 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
+脚本编译安装主库后自动编译并运行 `TestRpcService` 与 `TestFastDDSNode`，并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+
 ## 工程结构
 
 ```
 YomkRpc/
 ├── include/
-│   └── RpcService.h        # 服务头文件（消息包定义 + 类声明）
+│   ├── YomkRpcService.h    # 服务头文件（消息包定义 + 类声明）
+│   └── FastDDSNode.h       # DDS 节点管理类
 ├── src/
-│   └── RpcService.cpp      # 服务实现
+│   ├── YomkRpcService.cpp  # 服务实现
+│   └── FastDDSNode.cpp     # DDS 节点实现
+├── msg/
+│   ├── YomkRpcMsg.idl      # IDL 消息定义（如 MString）
+│   └── ...                 # fastddsgen 生成代码
 ├── test/
 │   ├── CMakeLists.txt      # 测试程序构建
-│   └── TestRpc.cpp         # 测试程序
+│   ├── TestRpcService.cpp  # 服务接口端到端测试
+│   └── TestFastDDSNode.cpp # DDS 节点收发测试
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板
 ├── CMakeLists.txt            # CMake 构建配置
@@ -55,28 +60,46 @@ YomkRpc/
 ## 使用示例
 
 ```cpp
-// 在工程中使用 YomkRpc
-#include <YomkRpc/RpcService.h>
+#include <YomkRpc/YomkRpcService.h>
+#include <YomkRpcMsg/YomkRpcMsg.hpp>
+#include <YomkRpcMsg/YomkRpcMsgPubSubTypes.hpp>
+
+using namespace yomk;
 
 // 注册服务
-YOMK_NEW_SERVICE(RpcService);
+YOMK_NEW_SERVICE(YomkRpcService);
 
-// 调用版本查询
-YomkResponse resp = YOMK_REQUEST("/RpcService/version", nullptr);
-if (resp.m_status == YomkResponse::eOk) {
-    YomkUnPackPkg(resp.m_data, String, version);
-    std::cout << "YomkRpc version: " << version->d << std::endl;
-}
+// 创建节点
+YOMK_REQUEST("/YomkRpcService/create_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
+
+// 注册发布主题（type 所有权移交 FastDDSNode，无需手动释放）
+YOMK_REQUEST("/YomkRpcService/register_pub_topic",
+             YomkMkPtr(DDSTopic, DDSTopic{"node0", "my_topic", new YomkRpc::MStringPubSubType()}));
+
+// 注册订阅主题（data 缓冲生命周期需覆盖订阅期）
+YomkRpc::MString recvBuf;
+YOMK_REQUEST("/YomkRpcService/register_sub_topic",
+             YomkMkPtr(DDSSubRequest, DDSSubRequest{"node0", "my_topic",
+                       new YomkRpc::MStringPubSubType(), &recvBuf,
+                       [](const void *data) { /* 收到数据，可直接读 recvBuf */ }}));
+
+// 发布数据
+YomkRpc::MString msg;
+msg.data("hello");
+YOMK_REQUEST("/YomkRpcService/publish", YomkMkPtr(DDSPublish, DDSPublish{"node0", "my_topic", &msg}));
+
+// 退出前删除节点，确保 DDS 实体正常清理
+YOMK_REQUEST("/YomkRpcService/delete_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
 ```
 
 ## 开发状态
 
 - ✅ 基础框架搭建完成
 - ✅ CMake 构建系统集成
-- ✅ 测试程序框架
-- 🚧 RPC 核心功能实现中
-- 🚧 服务注册与发现机制
-- 🚧 网络通信层
+- ✅ FastDDS 集成（FastDDSNode 发布订阅）
+- ✅ YomkRpcService DDS 接口（节点管理/主题注册/发布）
+- 🚧 跨进程/跨机通信验证
+- 🚧 更多数据类型支持
 
 ## License
 

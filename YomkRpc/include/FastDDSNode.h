@@ -1,5 +1,5 @@
-#ifndef FASTDDSMANAGER_H
-#define FASTDDSMANAGER_H
+#ifndef FASTDDSNODE_H
+#define FASTDDSNODE_H
 
 #include <cstdint>
 #include <functional>
@@ -17,26 +17,26 @@
 #include <fastdds/dds/topic/TypeSupport.hpp>
 
 /**
- * @brief FastDDS 管理类
+ * @brief FastDDS 节点管理类
  *
  * 封装 DDS 参与者/发布者/订阅者的生命周期管理，支持动态注册主题和发布数据。
  * 全部接口不使用模板，数据类型和数据包均通过 void* 传递；
  * 类型参数要求传入 fastddsgen 从 IDL 生成的 PubSubType 实例（如 new MStringPubSubType()），
  * 实现内部转换为 TopicDataType* 交给 TypeSupport 管理。
  */
-class FastDDSManager
+class FastDDSNode
 {
 public:
     // 订阅回调，参数为注册时传入的数据包指针
     using DataCallback = std::function<void(const void *)>;
 
-    FastDDSManager();
+    FastDDSNode();
     // 声明于头文件、实现于 cpp，以保证 SubListener 不完整类型下
     // unique_ptr<SubListener> 成员能正确析构
-    ~FastDDSManager();
+    ~FastDDSNode();
 
-    FastDDSManager(const FastDDSManager &) = delete;
-    FastDDSManager &operator=(const FastDDSManager &) = delete;
+    FastDDSNode(const FastDDSNode &) = delete;
+    FastDDSNode &operator=(const FastDDSNode &) = delete;
 
     /**
      * @brief 设置域 ID，创建参与者（含发布者/订阅者）
@@ -107,4 +107,4 @@ private:
     std::mutex mtx_;
 };
 
-#endif // FASTDDSMANAGER_H
+#endif // FASTDDSNODE_H

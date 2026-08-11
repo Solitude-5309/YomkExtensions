@@ -7,7 +7,7 @@
 #include <mutex>
 #include <string>
 
-#include "FastDDSManager.h"
+#include "FastDDSNode.h"
 
 using namespace yomk;
 
@@ -17,11 +17,11 @@ using namespace yomk;
 // DDS 订阅回调函数，参数为注册订阅时传入的数据包指针
 using DDSCallbackFunc = std::function<void(const void *)>;
 
-class RpcService : public YomkService
+class YomkRpcService : public YomkService
 {
 public:
-    RpcService(YomkServer *server);
-    virtual ~RpcService() {}
+    YomkRpcService(YomkServer *server);
+    virtual ~YomkRpcService() {}
     virtual int init() override;
 
 private:
@@ -35,8 +35,8 @@ private:
     YomkResponse publish(YomkPkgPtr pkg);
 
 private:
-    // 节点表：节点名 -> FastDDSManager（每个节点一个独立 DomainParticipant）
-    std::map<std::string, std::unique_ptr<FastDDSManager>> nodes_;
+    // 节点表：节点名 -> FastDDSNode（每个节点一个独立 DomainParticipant）
+    std::map<std::string, std::unique_ptr<FastDDSNode>> nodes_;
     std::mutex mtx_;
 };
 
@@ -48,7 +48,7 @@ struct DDSNode
 };
 
 // 注册发布 topic：type 为用户传入的 PubSubType 实例（如 new MStringPubSubType()），
-// 所有权移交 FastDDSManager（由 TypeSupport 接管）
+// 所有权移交 FastDDSNode（由 TypeSupport 接管）
 struct DDSTopic
 {
     std::string nodeName;
@@ -56,7 +56,7 @@ struct DDSTopic
     void *type;
 };
 
-// 注册订阅 topic：type 为 PubSubType 实例（所有权移交 FastDDSManager），
+// 注册订阅 topic：type 为 PubSubType 实例（所有权移交 FastDDSNode），
 // data 为接收缓冲（生命周期由调用方保证覆盖订阅期），callback 收到数据时回调
 struct DDSSubRequest
 {

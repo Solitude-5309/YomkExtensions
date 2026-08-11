@@ -1,33 +1,33 @@
-#include "RpcService.h"
+#include "YomkRpcService.h"
 
-RpcService::RpcService(YomkServer *server)
+YomkRpcService::YomkRpcService(YomkServer *server)
     : YomkService(server)
 {
-    name("/RpcService");
+    name("/YomkRpcService");
 }
 
-int RpcService::init()
+int YomkRpcService::init()
 {
-    YomkInstallFunc("/version", RpcService::getVersion);
-    YomkInstallFunc("/create_node", RpcService::createNode);
-    YomkInstallFunc("/delete_node", RpcService::deleteNode);
-    YomkInstallFunc("/register_pub_topic", RpcService::registerPubTopic);
-    YomkInstallFunc("/register_sub_topic", RpcService::registerSubTopic);
-    YomkInstallFunc("/publish", RpcService::publish);
-    YOMK_INFO_TAG("RpcService::init",
+    YomkInstallFunc("/version", YomkRpcService::getVersion);
+    YomkInstallFunc("/create_node", YomkRpcService::createNode);
+    YomkInstallFunc("/delete_node", YomkRpcService::deleteNode);
+    YomkInstallFunc("/register_pub_topic", YomkRpcService::registerPubTopic);
+    YomkInstallFunc("/register_sub_topic", YomkRpcService::registerSubTopic);
+    YomkInstallFunc("/publish", YomkRpcService::publish);
+    YOMK_INFO_TAG("YomkRpcService::init",
                   "install funcs [ /version /create_node /delete_node /register_pub_topic /register_sub_topic /publish ] to", name());
 
     return 0;
 }
 
-YomkResponse RpcService::getVersion(YomkPkgPtr pkg)
+YomkResponse YomkRpcService::getVersion(YomkPkgPtr pkg)
 {
     std::string version = "YomkRpc v1.0.0 (WIP)";
-    YOMK_INFO_TAG("RpcService::getVersion", version);
+    YOMK_INFO_TAG("YomkRpcService::getVersion", version);
     return YomkResponse(YomkResponse::eOk, "ok", YomkMkPtr(String, version));
 }
 
-YomkResponse RpcService::createNode(YomkPkgPtr pkg)
+YomkResponse YomkRpcService::createNode(YomkPkgPtr pkg)
 {
     YomkUnPackPkgResponse(pkg, DDSNode, p);
 
@@ -37,7 +37,7 @@ YomkResponse RpcService::createNode(YomkPkgPtr pkg)
         return YomkResponse(YomkResponse::eNo, "node [" + p->msg.nodeName + "] already exists");
     }
 
-    auto node = std::make_unique<FastDDSManager>();
+    auto node = std::make_unique<FastDDSNode>();
     if (!node->setDomainId(p->msg.domainId))
     {
         return YomkResponse(YomkResponse::eNo,
@@ -45,12 +45,12 @@ YomkResponse RpcService::createNode(YomkPkgPtr pkg)
     }
     nodes_[p->msg.nodeName] = std::move(node);
 
-    YOMK_INFO_TAG("RpcService::createNode",
+    YOMK_INFO_TAG("YomkRpcService::createNode",
                   "node [" + p->msg.nodeName + "] created, domainId=" + std::to_string(p->msg.domainId));
     return YomkResponse(YomkResponse::eOk, "ok");
 }
 
-YomkResponse RpcService::deleteNode(YomkPkgPtr pkg)
+YomkResponse YomkRpcService::deleteNode(YomkPkgPtr pkg)
 {
     YomkUnPackPkgResponse(pkg, DDSNode, p);
 
@@ -62,11 +62,11 @@ YomkResponse RpcService::deleteNode(YomkPkgPtr pkg)
     }
     nodes_.erase(it);
 
-    YOMK_INFO_TAG("RpcService::deleteNode", "node [" + p->msg.nodeName + "] deleted");
+    YOMK_INFO_TAG("YomkRpcService::deleteNode", "node [" + p->msg.nodeName + "] deleted");
     return YomkResponse(YomkResponse::eOk, "ok");
 }
 
-YomkResponse RpcService::registerPubTopic(YomkPkgPtr pkg)
+YomkResponse YomkRpcService::registerPubTopic(YomkPkgPtr pkg)
 {
     YomkUnPackPkgResponse(pkg, DDSTopic, p);
 
@@ -82,12 +82,12 @@ YomkResponse RpcService::registerPubTopic(YomkPkgPtr pkg)
                             "registerPubTopic [" + p->msg.topicName + "] failed on node [" + p->msg.nodeName + "]");
     }
 
-    YOMK_INFO_TAG("RpcService::registerPubTopic",
+    YOMK_INFO_TAG("YomkRpcService::registerPubTopic",
                   "node [" + p->msg.nodeName + "] register pub topic [" + p->msg.topicName + "]");
     return YomkResponse(YomkResponse::eOk, "ok");
 }
 
-YomkResponse RpcService::registerSubTopic(YomkPkgPtr pkg)
+YomkResponse YomkRpcService::registerSubTopic(YomkPkgPtr pkg)
 {
     YomkUnPackPkgResponse(pkg, DDSSubRequest, p);
 
@@ -103,12 +103,12 @@ YomkResponse RpcService::registerSubTopic(YomkPkgPtr pkg)
                             "registerSubTopic [" + p->msg.topicName + "] failed on node [" + p->msg.nodeName + "]");
     }
 
-    YOMK_INFO_TAG("RpcService::registerSubTopic",
+    YOMK_INFO_TAG("YomkRpcService::registerSubTopic",
                   "node [" + p->msg.nodeName + "] register sub topic [" + p->msg.topicName + "]");
     return YomkResponse(YomkResponse::eOk, "ok");
 }
 
-YomkResponse RpcService::publish(YomkPkgPtr pkg)
+YomkResponse YomkRpcService::publish(YomkPkgPtr pkg)
 {
     YomkUnPackPkgResponse(pkg, DDSPublish, p);
 

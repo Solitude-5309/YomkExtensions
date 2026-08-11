@@ -1,5 +1,5 @@
 #include <YomkServer/YomkAPI.h>
-#include <YomkRpc/RpcService.h>
+#include <YomkRpc/YomkRpcService.h>
 #include <YomkRpcMsg/YomkRpcMsg.hpp>
 #include <YomkRpcMsg/YomkRpcMsgPubSubTypes.hpp>
 #include <atomic>
@@ -31,11 +31,11 @@ void check(const char *name, bool condition)
 int main(int argc, char *argv[])
 {
     YOMK_INIT();
-    YOMK_NEW_SERVICE(RpcService);
+    YOMK_NEW_SERVICE(YomkRpcService);
 
     // 测试版本查询
-    std::cout << "\n=== Test RpcService::getVersion ===" << std::endl;
-    YomkResponse resp = YOMK_REQUEST("/RpcService/version", nullptr);
+    std::cout << "\n=== Test YomkRpcService::getVersion ===" << std::endl;
+    YomkResponse resp = YOMK_REQUEST("/YomkRpcService/version", nullptr);
     if (resp.m_status == YomkResponse::eOk)
     {
         YomkUnPackPkg(resp.m_data, String, version);
@@ -58,31 +58,31 @@ int main(int argc, char *argv[])
 
     // TODO: 后续添加更多测试用例
     // 示例：
-    // std::cout << "\n=== Test RpcService::remoteCall ===" << std::endl;
-    // YomkResponse resp = YOMK_REQUEST("/RpcService/call", YomkMkPtr(YRpcRequest, rpcReq));
+    // std::cout << "\n=== Test YomkRpcService::remoteCall ===" << std::endl;
+    // YomkResponse resp = YOMK_REQUEST("/YomkRpcService/call", YomkMkPtr(YRpcRequest, rpcReq));
 
     // 测试创建节点
-    std::cout << "\n=== Test RpcService::createNode ===" << std::endl;
-    resp = YOMK_REQUEST("/RpcService/create_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
+    std::cout << "\n=== Test YomkRpcService::createNode ===" << std::endl;
+    resp = YOMK_REQUEST("/YomkRpcService/create_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
     check("createNode node0", resp.m_status == YomkResponse::eOk);
 
     // 重复创建同名节点应失败
-    resp = YOMK_REQUEST("/RpcService/create_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
+    resp = YOMK_REQUEST("/YomkRpcService/create_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
     check("createNode duplicate should fail", resp.m_status == YomkResponse::eNo);
 
     // 向不存在的节点注册应失败
-    resp = YOMK_REQUEST("/RpcService/register_pub_topic",
+    resp = YOMK_REQUEST("/YomkRpcService/register_pub_topic",
                         YomkMkPtr(DDSTopic, DDSTopic{"no_such_node", "rpc_test_topic", nullptr}));
     check("registerPubTopic on missing node should fail", resp.m_status == YomkResponse::eNo);
 
     // 测试注册发布主题
-    std::cout << "\n=== Test RpcService::registerPubTopic ===" << std::endl;
-    resp = YOMK_REQUEST("/RpcService/register_pub_topic",
+    std::cout << "\n=== Test YomkRpcService::registerPubTopic ===" << std::endl;
+    resp = YOMK_REQUEST("/YomkRpcService/register_pub_topic",
                         YomkMkPtr(DDSTopic, DDSTopic{"node0", "rpc_test_topic", new YomkRpc::MStringPubSubType()}));
     check("registerPubTopic rpc_test_topic", resp.m_status == YomkResponse::eOk);
 
     // 测试注册订阅主题
-    std::cout << "\n=== Test RpcService::registerSubTopic ===" << std::endl;
+    std::cout << "\n=== Test YomkRpcService::registerSubTopic ===" << std::endl;
     YomkRpc::MString recvBuf;
     std::atomic<int> received{0};
     std::mutex msgMtx;
@@ -96,18 +96,18 @@ int main(int argc, char *argv[])
                              received++;
                              std::cout << "Received: " << msg->data() << std::endl;
                          }};
-    resp = YOMK_REQUEST("/RpcService/register_sub_topic", YomkMkPtr(DDSSubRequest, subReq));
+    resp = YOMK_REQUEST("/YomkRpcService/register_sub_topic", YomkMkPtr(DDSSubRequest, subReq));
     check("registerSubTopic rpc_test_topic", resp.m_status == YomkResponse::eOk);
 
     // 等待 DDS discovery 完成后发布数据
-    std::cout << "\n=== Test RpcService::publish ===" << std::endl;
+    std::cout << "\n=== Test YomkRpcService::publish ===" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(1));
     bool allPublished = true;
     for (int i = 0; i < 5; ++i)
     {
         YomkRpc::MString msg;
-        msg.data("Hello RpcService " + std::to_string(i));
-        resp = YOMK_REQUEST("/RpcService/publish",
+        msg.data("Hello YomkRpcService " + std::to_string(i));
+        resp = YOMK_REQUEST("/YomkRpcService/publish",
                             YomkMkPtr(DDSPublish, DDSPublish{"node0", "rpc_test_topic", &msg}));
         if (resp.m_status != YomkResponse::eOk)
         {
@@ -124,12 +124,12 @@ int main(int argc, char *argv[])
     check("subscriber received >= 4 messages", received.load() >= 4);
 
     // 测试删除节点：删除不存在的节点应失败
-    std::cout << "\n=== Test RpcService::deleteNode ===" << std::endl;
-    resp = YOMK_REQUEST("/RpcService/delete_node", YomkMkPtr(DDSNode, DDSNode{0, "no_such_node"}));
+    std::cout << "\n=== Test YomkRpcService::deleteNode ===" << std::endl;
+    resp = YOMK_REQUEST("/YomkRpcService/delete_node", YomkMkPtr(DDSNode, DDSNode{0, "no_such_node"}));
     check("deleteNode missing node should fail", resp.m_status == YomkResponse::eNo);
 
     // 退出前销毁节点，确保 DDS 实体在 FastDDS 静态资源销毁前清理
-    resp = YOMK_REQUEST("/RpcService/delete_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
+    resp = YOMK_REQUEST("/YomkRpcService/delete_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
     check("deleteNode node0", resp.m_status == YomkResponse::eOk);
 
     std::cout << "\n========== Test Summary ==========" << std::endl;
