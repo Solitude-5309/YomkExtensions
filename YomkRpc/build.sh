@@ -11,6 +11,31 @@ TEST_DIR="${SCRIPT_DIR}/test"
 TEST_BUILD_DIR="${TEST_DIR}/build"
 _ORIG_DIR="$(pwd)"
 
+# 解析用户传入的 cmake 参数
+YOMK_SERVER_PATH=""
+USER_INSTALL_PREFIX=""
+for arg in "$@"; do
+    if [[ "${arg}" == -DCMAKE_PREFIX_PATH=* ]]; then
+        YOMK_SERVER_PATH="${arg#-DCMAKE_PREFIX_PATH=}"
+    elif [[ "${arg}" == -DCMAKE_INSTALL_PREFIX=* ]]; then
+        USER_INSTALL_PREFIX="${arg#-DCMAKE_INSTALL_PREFIX=}"
+    fi
+done
+
+# 展开路径开头的 ~（bash 不会展开 -DXXX=~/path 中的 ~）
+if [[ "${USER_INSTALL_PREFIX}" == "~"* ]]; then
+    USER_INSTALL_PREFIX="${HOME}${USER_INSTALL_PREFIX#\~}"
+fi
+if [[ "${YOMK_SERVER_PATH}" == "~"* ]]; then
+    YOMK_SERVER_PATH="${HOME}${YOMK_SERVER_PATH#\~}"
+fi
+
+# 用户指定了安装目录时，以用户指定的为准
+if [ -n "${USER_INSTALL_PREFIX}" ]; then
+    INSTALL_DIR="${USER_INSTALL_PREFIX}"
+fi
+echo "安装目录: ${INSTALL_DIR}"
+
 # 询问是否编译 test
 read -p "编译测试程序? [Y/n]: " BUILD_TEST
 BUILD_TEST=${BUILD_TEST:-y}
@@ -82,14 +107,6 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     mkdir -p "${TEST_BUILD_DIR}"
     cd "${TEST_BUILD_DIR}" || return 1
 
-    # 获取 YomkServer 路径
-    YOMK_SERVER_PATH=""
-    for arg in "$@"; do
-        if [[ "${arg}" == -DCMAKE_PREFIX_PATH=* ]]; then
-            YOMK_SERVER_PATH="${arg#-DCMAKE_PREFIX_PATH=}"
-        fi
-    done
-
     CMAKE_PREFIX_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_DIR}"
     if [ -n "${YOMK_SERVER_PATH}" ]; then
         CMAKE_PREFIX_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_DIR};${YOMK_SERVER_PATH}"
@@ -109,15 +126,14 @@ if [ "${BUILD_TEST}" = "ON" ]; then
         return 1
     fi
 
-    # 设置临时环境变量
-    YOMKSERVER_LIB_DIR=$(find "${YOMK_SERVER_PATH:-${INSTALL_DIR}/..}" -name "libYomkServer.so" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-    if [ -z "${YOMKSERVER_LIB_DIR}" ]; then
-        YOMKSERVER_LIB_DIR="${INSTALL_DIR}/../YomkServer/install/lib"
+    # 设置临时环境变量：安装目录 lib + YomkServer lib（含 fastdds 等间接依赖）
+    LD_LIBRARY_PATH="${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}"
+    if [ -n "${YOMK_SERVER_PATH}" ]; then
+        LD_LIBRARY_PATH="${YOMK_SERVER_PATH}/lib:${LD_LIBRARY_PATH}"
     fi
-
-    export LD_LIBRARY_PATH="${INSTALL_DIR}/lib:${YOMKSERVER_LIB_DIR}:${LD_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH
     export PATH="${TEST_BUILD_DIR}:${PATH}"
-    
+
     # 运行测试
     echo ""
     echo "========== 运行测试程序 =========="
