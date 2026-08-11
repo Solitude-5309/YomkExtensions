@@ -1,18 +1,35 @@
 cmake_minimum_required(VERSION 3.14)
-project(YomkRpc VERSION 0.0.5 LANGUAGES CXX)
+project(YomkRpc VERSION 0.0.6 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(YomkServer REQUIRED)
+message(STATUS "YomkServer version: ${YomkServer_VERSION}")  
+message(STATUS "YomkServer include dirs: ${YomkServer_INCLUDE_DIRS}")  
+message(STATUS "YomkServer lib dir: ${YomkServer_LIB_DIR}")  
+message(STATUS "YomkServer libraries: ${YomkServer_LIBRARIES}") 
+include_directories(${YomkServer_INCLUDE_DIRS})
+link_directories(${YomkServer_LIB_DIR})
+
+# Set third-party directory
+set(THIRD_PARTY_DIR "${CMAKE_CURRENT_LIST_DIR}/thirdparty")
+set(CMAKE_PREFIX_PATH
+  "${THIRD_PARTY_DIR}/Fast-DDS-3.6.1/install"
+)
+find_package(fastdds 3 REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # 编译为动态库
 add_library(${PROJECT_NAME} SHARED
     src/RpcService.cpp
+    src/FastDDSManager.cpp
+    msg/YomkRpcMsgPubSubTypes.cxx
+    msg/YomkRpcMsgTypeObjectSupport.cxx
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE YomkServer::YomkServer)
+target_link_libraries(${PROJECT_NAME} PUBLIC fastdds)
 
 # 安装规则
 set(INCLUDE_INSTALL_DIR "include/${PROJECT_NAME}")
