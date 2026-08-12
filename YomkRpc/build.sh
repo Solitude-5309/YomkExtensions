@@ -103,7 +103,6 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     echo ""
     echo "========== 运行测试程序 =========="
     "./TestRpcService"
-    "./TestFastDDSNode"
 fi
 
 # 返回原目录

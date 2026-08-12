@@ -7,7 +7,7 @@
 #include <mutex>
 #include <string>
 
-#include "FastDDSNode.h"
+class FastDDSNode;
 
 using namespace yomk;
 
@@ -21,7 +21,7 @@ class YomkRpcService : public YomkService
 {
 public:
     YomkRpcService(YomkServer *server);
-    virtual ~YomkRpcService() {}
+    virtual ~YomkRpcService();
     virtual int init() override;
 
 private:

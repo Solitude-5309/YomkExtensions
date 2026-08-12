@@ -19,6 +19,3 @@ link_directories(${YomkServer_LIB_DIR})
 
 add_executable(TestRpcService TestRpcService.cpp)
 target_link_libraries(TestRpcService PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer)
-
-add_executable(TestFastDDSNode TestFastDDSNode.cpp)
-target_link_libraries(TestFastDDSNode PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer)

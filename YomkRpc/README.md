@@ -31,7 +31,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本编译安装主库后自动编译并运行 `TestRpcService` 与 `TestFastDDSNode`，并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本编译安装主库后自动编译并运行 `TestRpcService`，并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
@@ -39,7 +39,6 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=
 YomkRpc/
 ├── include/
 │   ├── YomkRpcService.h    # 服务头文件（消息包定义 + 类声明）
-│   └── FastDDSNode.h       # DDS 节点管理类
 ├── src/
 │   ├── YomkRpcService.cpp  # 服务实现
 │   └── FastDDSNode.cpp     # DDS 节点实现
@@ -48,8 +47,7 @@ YomkRpc/
 │   └── ...                 # fastddsgen 生成代码
 ├── test/
 │   ├── CMakeLists.txt      # 测试程序构建
-│   ├── TestRpcService.cpp  # 服务接口端到端测试
-│   └── TestFastDDSNode.cpp # DDS 节点收发测试
+│   └── TestRpcService.cpp  # 服务接口端到端测试
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板
 ├── CMakeLists.txt            # CMake 构建配置

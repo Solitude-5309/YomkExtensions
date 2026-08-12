@@ -1,10 +1,13 @@
 #include "YomkRpcService.h"
+#include "FastDDSNode.h"
 
 YomkRpcService::YomkRpcService(YomkServer *server)
     : YomkService(server)
 {
     name("/YomkRpcService");
 }
+
+YomkRpcService::~YomkRpcService() = default;
 
 int YomkRpcService::init()
 {
