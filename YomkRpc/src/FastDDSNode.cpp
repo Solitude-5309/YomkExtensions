@@ -7,7 +7,6 @@
 
 using namespace eprosima::fastdds::dds;
 
-// 订阅监听器（非模板，使用内部创建的数据包缓冲）
 class FastDDSNode::SubListener : public DataReaderListener
 {
 public:
@@ -101,7 +100,9 @@ bool FastDDSNode::setDomainId(uint32_t domainId)
     return (publisher_ != nullptr) && (subscriber_ != nullptr);
 }
 
-Topic *FastDDSNode::getOrCreateTopic(const std::string &topicName, const std::string &typeName)
+Topic *FastDDSNode::getOrCreateTopic(
+    const std::string &topicName,
+    const std::string &typeName)
 {
     auto it = topics_.find(topicName);
     if (it != topics_.end())

@@ -12,7 +12,7 @@
 | `/YomkRpcService/create_node` | 创建节点 | 传入 `DDSNode{domainId, nodeName}`，每节点一个独立 DDS 参与者 |
 | `/YomkRpcService/delete_node` | 删除节点 | 销毁节点及其全部 DDS 实体，不存在的节点返回错误 |
 | `/YomkRpcService/register_pub_topic` | 注册发布主题 | 传入 `DDSTopic{nodeName, topicName, type}`，type 为 PubSubType 实例指针 |
-| `/YomkRpcService/register_sub_topic` | 注册订阅主题 | 传入 `DDSSubRequest{nodeName, topicName, type, data, callback}` |
+| `/YomkRpcService/register_sub_topic` | 注册订阅主题 | 传入 `DDSSubRequest{nodeName, topicName, type, callback}`，data 由内部自动创建 |
 | `/YomkRpcService/publish` | 发布数据 | 传入 `DDSPublish{nodeName, topicName, data}`，data 为数据实例指针 |
 
 ## 前置条件
@@ -39,6 +39,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=
 YomkRpc/
 ├── include/
 │   ├── YomkRpcService.h    # 服务头文件（消息包定义 + 类声明）
+│   └── YomkRpcAPI.h        # API 宏封装（简化调用）
 ├── src/
 │   ├── YomkRpcService.cpp  # 服务实现
 │   └── FastDDSNode.cpp     # DDS 节点实现
@@ -58,34 +59,37 @@ YomkRpc/
 ## 使用示例
 
 ```cpp
-#include <YomkRpc/YomkRpcService.h>
+#include <YomkRpc/YomkRpcAPI.h>
 #include <YomkRpcMsg/YomkRpcMsg.hpp>
 #include <YomkRpcMsg/YomkRpcMsgPubSubTypes.hpp>
 
 using namespace yomk;
 
-// 注册服务
+// 启动服务
+YOMK_INIT();
 YOMK_NEW_SERVICE(YomkRpcService);
 
+// 查看版本（宏内部自动解包并打印）
+YOMKRPC_VERSION();
+
 // 创建节点
-YOMK_REQUEST("/YomkRpcService/create_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
+YOMKRPC_NODE(0, "node0");
 
-// 注册发布主题（type 所有权移交 FastDDSNode，无需手动释放）
-YOMK_REQUEST("/YomkRpcService/register_pub_topic",
-             YomkMkPtr(DDSTopic, DDSTopic{"node0", "my_topic", new YomkRpc::MStringPubSubType()}));
+// 注册发布主题（type 所有权移交 FastDDSNode）
+YOMKRPC_PUB_TOPIC("node0", "my_topic", new YomkRpc::MStringPubSubType());
 
-YOMK_REQUEST("/YomkRpcService/register_sub_topic",
-             YomkMkPtr(DDSSubRequest, DDSSubRequest{"node0", "my_topic",
-                       new YomkRpc::MStringPubSubType(),
-                       [](const void *data) { /* 收到数据 */ }}));
+// 注册订阅主题（data 由内部 create_data() 创建）
+YOMKRPC_SUB_TOPIC("node0", "my_topic",
+    new YomkRpc::MStringPubSubType(),
+    [](const void *data) { /* 收到数据 */ });
 
 // 发布数据
 YomkRpc::MString msg;
 msg.data("hello");
-YOMK_REQUEST("/YomkRpcService/publish", YomkMkPtr(DDSPublish, DDSPublish{"node0", "my_topic", &msg}));
+YOMKRPC_PUB_MSG("node0", "my_topic", &msg);
 
-// 退出前删除节点，确保 DDS 实体正常清理
-YOMK_REQUEST("/YomkRpcService/delete_node", YomkMkPtr(DDSNode, DDSNode{0, "node0"}));
+// 退出前删除节点
+YOMKRPC_DEL_NODE("node0");
 ```
 
 ## 开发状态
