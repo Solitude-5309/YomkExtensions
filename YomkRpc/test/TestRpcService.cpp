@@ -36,24 +36,15 @@ int main(int argc, char *argv[])
     // 测试版本查询
     std::cout << "\n=== Test YomkRpcService::getVersion ===" << std::endl;
     YomkResponse resp = YOMK_REQUEST("/YomkRpcService/version", nullptr);
-    if (resp.m_status == YomkResponse::eOk)
+    if (resp.m_status != YomkResponse::eOk)
     {
-        YomkUnPackPkg(resp.m_data, String, version);
-        if (version && version->d.find("YomkRpc") != std::string::npos)
-        {
-            std::cout << "[PASS] getVersion returns valid version: " << version->d << std::endl;
-            g_pass++;
-        }
-        else
-        {
-            std::cout << "[FAIL] getVersion returns invalid version" << std::endl;
-            g_fail++;
-        }
+        std::cout << "[FAIL] getVersion request failed: " << resp.m_msg << std::endl;
+        g_fail++;
     }
     else
     {
-        std::cout << "[FAIL] version request failed: " << resp.m_msg << std::endl;
-        g_fail++;
+        YomkUnPackPkg(resp.m_data, String, version);
+        check("getVersion returns valid version", version && version->d.find("YomkRpc") != std::string::npos);
     }
 
     // TODO: 后续添加更多测试用例
@@ -83,19 +74,21 @@ int main(int argc, char *argv[])
 
     // 测试注册订阅主题
     std::cout << "\n=== Test YomkRpcService::registerSubTopic ===" << std::endl;
-    YomkRpc::MString recvBuf;
     std::atomic<int> received{0};
     std::mutex msgMtx;
     std::string lastMsg;
-    DDSSubRequest subReq{"node0", "rpc_test_topic", new YomkRpc::MStringPubSubType(), &recvBuf,
-                         [&](const void *data)
-                         {
-                             auto *msg = static_cast<const YomkRpc::MString *>(data);
-                             std::lock_guard<std::mutex> lock(msgMtx);
-                             lastMsg = msg->data();
-                             received++;
-                             std::cout << "Received: " << msg->data() << std::endl;
-                         }};
+
+    // 订阅回调：收到消息时累加计数并记录最后一条消息
+    auto onMessage = [&](const void *data)
+    {
+        auto *msg = static_cast<const YomkRpc::MString *>(data);
+        std::lock_guard<std::mutex> lock(msgMtx);
+        lastMsg = msg->data();
+        received++;
+        std::cout << "Received: " << msg->data() << std::endl;
+    };
+
+    DDSSubRequest subReq{"node0", "rpc_test_topic", new YomkRpc::MStringPubSubType(), onMessage};
     resp = YOMK_REQUEST("/YomkRpcService/register_sub_topic", YomkMkPtr(DDSSubRequest, subReq));
     check("registerSubTopic rpc_test_topic", resp.m_status == YomkResponse::eOk);
 

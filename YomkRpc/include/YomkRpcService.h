@@ -57,13 +57,12 @@ struct DDSTopic
 };
 
 // 注册订阅 topic：type 为 PubSubType 实例（所有权移交 FastDDSNode），
-// data 为接收缓冲（生命周期由调用方保证覆盖订阅期），callback 收到数据时回调
+// 内部通过 type->create_data() 创建接收缓冲，callback 收到数据时回调
 struct DDSSubRequest
 {
     std::string nodeName;
     std::string topicName;
     void *type;
-    void *data;
     DDSCallbackFunc callback;
 };
 

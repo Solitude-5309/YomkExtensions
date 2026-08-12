@@ -25,7 +25,7 @@ int YomkRpcService::init()
 
 YomkResponse YomkRpcService::getVersion(YomkPkgPtr pkg)
 {
-    std::string version = "YomkRpc v1.0.0 (WIP)";
+    std::string version = "YomkRpc v0.0.11 (WIP)";
     YOMK_INFO_TAG("YomkRpcService::getVersion", version);
     return YomkResponse(YomkResponse::eOk, "ok", YomkMkPtr(String, version));
 }
@@ -100,7 +100,7 @@ YomkResponse YomkRpcService::registerSubTopic(YomkPkgPtr pkg)
     {
         return YomkResponse(YomkResponse::eNo, "node [" + p->msg.nodeName + "] not exists");
     }
-    if (!it->second->registerSubTopic(p->msg.topicName, p->msg.type, p->msg.data, p->msg.callback))
+    if (!it->second->registerSubTopic(p->msg.topicName, p->msg.type, p->msg.callback))
     {
         return YomkResponse(YomkResponse::eNo,
                             "registerSubTopic [" + p->msg.topicName + "] failed on node [" + p->msg.nodeName + "]");

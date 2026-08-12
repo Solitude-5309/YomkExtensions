@@ -49,14 +49,13 @@ public:
      * @brief 注册订阅主题
      * @param topicName 主题名
      * @param type IDL 生成的 PubSubType 实例（如 new MStringPubSubType()），
-     *             以 void* 传入，实现内部转换为 TopicDataType*，所有权交给本类
-     * @param data 接收用数据包（指向对应数据类型实例的指针），生命周期需覆盖订阅期
-     * @param callback 收到数据时以 data 指针回调
+     *             以 void* 传入，实现内部转换为 TopicDataType*，所有权交给本类。
+     *             内部通过 type->create_data() 创建接收缓冲，数据通过 callback 传回
+     * @param callback 收到数据时以数据包指针回调
      * @return 成功返回 true
      */
     bool registerSubTopic(const std::string &topicName,
                           void *type,
-                          void *data,
                           DataCallback callback);
 
     /**
@@ -77,7 +76,7 @@ public:
     bool publish(const std::string &topicName, const void *data);
 
 private:
-    // 订阅监听器（非模板，使用注册时传入的数据包缓冲）
+    // 订阅监听器（非模板，使用内部创建的数据包缓冲）
     class SubListener;
 
     // 获取或创建主题：已存在则直接复用（校验类型名一致），不存在则创建并记录
@@ -94,6 +93,8 @@ private:
     {
         eprosima::fastdds::dds::TypeSupport type;
         eprosima::fastdds::dds::DataReader *reader = nullptr;
+        eprosima::fastdds::dds::TopicDataType *topicType = nullptr;
+        void *data = nullptr; // 内部 create_data() 创建，析构时 delete_data() 释放
         std::unique_ptr<SubListener> listener;
     };
 

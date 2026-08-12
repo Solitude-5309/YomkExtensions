@@ -7,7 +7,7 @@
 
 using namespace eprosima::fastdds::dds;
 
-// 订阅监听器（非模板，使用注册时传入的数据包缓冲）
+// 订阅监听器（非模板，使用内部创建的数据包缓冲）
 class FastDDSNode::SubListener : public DataReaderListener
 {
 public:
@@ -38,40 +38,47 @@ FastDDSNode::FastDDSNode() = default;
 FastDDSNode::~FastDDSNode()
 {
     // 清理顺序：DataReader/DataWriter → Topic → Publisher/Subscriber → Participant
-    if (participant_ != nullptr)
+    if (participant_ == nullptr)
     {
-        if (subscriber_ != nullptr)
-        {
-            for (auto &kv : subTopics_)
-            {
-                if (kv.second.reader != nullptr)
-                {
-                    subscriber_->delete_datareader(kv.second.reader);
-                }
-            }
-            participant_->delete_subscriber(subscriber_);
-        }
-
-        if (publisher_ != nullptr)
-        {
-            for (auto &kv : pubTopics_)
-            {
-                if (kv.second.writer != nullptr)
-                {
-                    publisher_->delete_datawriter(kv.second.writer);
-                }
-            }
-            participant_->delete_publisher(publisher_);
-        }
-
-        // 清理统一维护的主题
-        for (auto &kv : topics_)
-        {
-            participant_->delete_topic(kv.second);
-        }
-
-        DomainParticipantFactory::get_instance()->delete_participant(participant_);
+        return;
     }
+
+    if (subscriber_ != nullptr)
+    {
+        for (auto &kv : subTopics_)
+        {
+            if (kv.second.reader != nullptr)
+            {
+                subscriber_->delete_datareader(kv.second.reader);
+            }
+            // 释放内部 create_data() 创建的数据缓冲
+            if (kv.second.topicType != nullptr && kv.second.data != nullptr)
+            {
+                kv.second.topicType->delete_data(kv.second.data);
+            }
+        }
+        participant_->delete_subscriber(subscriber_);
+    }
+
+    if (publisher_ != nullptr)
+    {
+        for (auto &kv : pubTopics_)
+        {
+            if (kv.second.writer != nullptr)
+            {
+                publisher_->delete_datawriter(kv.second.writer);
+            }
+        }
+        participant_->delete_publisher(publisher_);
+    }
+
+    // 清理统一维护的主题
+    for (auto &kv : topics_)
+    {
+        participant_->delete_topic(kv.second);
+    }
+
+    DomainParticipantFactory::get_instance()->delete_participant(participant_);
 }
 
 bool FastDDSNode::setDomainId(uint32_t domainId)
@@ -154,22 +161,21 @@ bool FastDDSNode::registerPubTopic(const std::string &topicName, void *type)
 }
 
 bool FastDDSNode::registerSubTopic(const std::string &topicName, void *type,
-                                   void *data, DataCallback callback)
+                                   DataCallback callback)
 {
     std::lock_guard<std::mutex> lock(mtx_);
-    if (participant_ == nullptr || subscriber_ == nullptr || type == nullptr || data == nullptr || subTopics_.count(topicName) > 0)
+    if (participant_ == nullptr || subscriber_ == nullptr || type == nullptr || subTopics_.count(topicName) > 0)
     {
         return false;
     }
 
     // 转换为 TopicDataType*，TypeSupport 接管所有权
-    TypeSupport ts(static_cast<TopicDataType *>(type));
+    auto *topicType = static_cast<TopicDataType *>(type);
+    TypeSupport ts(topicType);
     // 类型可能已被发布侧注册，重复注册的错误可忽略
     ts.register_type(participant_);
 
-    SubInfo info;
-    info.type = ts;
-    info.listener = std::make_unique<SubListener>(data, std::move(callback));
+    // 先获取或创建 Topic，确保资源有效后再创建数据缓冲（避免失败路径泄漏）
     bool topicExisted = topics_.count(topicName) > 0;
     Topic *topic = getOrCreateTopic(topicName, ts.get_type_name());
     if (topic == nullptr)
@@ -177,9 +183,20 @@ bool FastDDSNode::registerSubTopic(const std::string &topicName, void *type,
         return false;
     }
 
+    // 由 type 内部创建数据缓冲，无需用户传入
+    void *data = topicType->create_data();
+
+    SubInfo info;
+    info.type = ts;
+    info.topicType = topicType;
+    info.data = data;
+    info.listener = std::make_unique<SubListener>(data, std::move(callback));
+
     info.reader = subscriber_->create_datareader(topic, DATAREADER_QOS_DEFAULT, info.listener.get());
     if (info.reader == nullptr)
     {
+        // 清理已创建的数据缓冲
+        topicType->delete_data(data);
         // 本次新创建的主题需回滚
         if (!topicExisted)
         {

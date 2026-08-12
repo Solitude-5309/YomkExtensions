@@ -74,12 +74,10 @@ YOMK_REQUEST("/YomkRpcService/create_node", YomkMkPtr(DDSNode, DDSNode{0, "node0
 YOMK_REQUEST("/YomkRpcService/register_pub_topic",
              YomkMkPtr(DDSTopic, DDSTopic{"node0", "my_topic", new YomkRpc::MStringPubSubType()}));
 
-// 注册订阅主题（data 缓冲生命周期需覆盖订阅期）
-YomkRpc::MString recvBuf;
 YOMK_REQUEST("/YomkRpcService/register_sub_topic",
              YomkMkPtr(DDSSubRequest, DDSSubRequest{"node0", "my_topic",
-                       new YomkRpc::MStringPubSubType(), &recvBuf,
-                       [](const void *data) { /* 收到数据，可直接读 recvBuf */ }}));
+                       new YomkRpc::MStringPubSubType(),
+                       [](const void *data) { /* 收到数据 */ }}));
 
 // 发布数据
 YomkRpc::MString msg;
