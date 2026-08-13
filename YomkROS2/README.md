@@ -23,6 +23,19 @@
 | `publish<T>(topic, data)` | 发布数据 | 主题名、数据包 |
 | `shutdown()` | 显式销毁 | 销毁节点与全部实体，退出前建议调用 |
 
+### 宏 API（YomkROSAPI.h）
+
+基于全局单例 ROS2Node 的宏封装，与原生 ROS2 节点语义一致，仅是调用更简单（`#include <YomkROS2/YomkROSAPI.h>`）：
+
+| 宏 | 功能 | 说明 |
+|------|------|------|
+| `YOMKROS2_NODE(argc, argv, nodeName)` | 初始化节点 | 透传 argc/argv，支持命令行重映射；仅初始化，不启动运行 |
+| `YOMKROS2_RUN(blocking)` | 运行节点 | `true`：阻塞当前线程直至 shutdown（典型 main 用法）；`false`：后台线程运行 |
+| `YOMKROS2_PUB_TOPIC(type, topic, queueSize)` | 注册发布主题 | 显式传 rosidl 消息类型 |
+| `YOMKROS2_SUB_TOPIC(type, topic, queueSize, cb)` | 注册订阅主题 | 回调体内若含顶层逗号，请先将回调定义为变量再传入 |
+| `YOMKROS2_PUB_MSG(topic, data)` | 发送消息 | 消息类型由 data 自动推导 |
+| `YOMKROS2_SHUTDOWN()` | 显式销毁 | 退出前建议调用；不调用时析构兜底 |
+
 ## 前置条件
 
 - C++17 编译器
@@ -40,20 +53,22 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本编译安装主库后自动编译并依次运行 `TestYomkRos2NonBlocking`（非阻塞）与 `TestYomkRos2Blocking`（阻塞），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本编译安装主库后自动编译并依次运行 `TestYomkRos2NonBlocking`（非阻塞）、`TestYomkRos2Blocking`（阻塞）与 `TestYomkROS2API`（宏 API 阻塞模式，脚本以 SIGINT 模拟 Ctrl+C 唤醒），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
 ```
 YomkROS2/
 ├── include/
-│   └── ROS2Node.h           # ROS2 通信封装类（模板方法）
+│   ├── ROS2Node.h           # ROS2 通信封装类（模板方法）
+│   └── YomkROSAPI.h         # 宏封装 API（全局单例简化调用）
 ├── src/
 │   └── ROS2Node.cpp         # ROS2Node 非模板方法实现
 ├── test/
 │   ├── CMakeLists.txt                # 测试程序构建
 │   ├── TestYomkRos2NonBlocking.cpp   # 非阻塞 run(false) 端到端测试
-│   └── TestYomkRos2Blocking.cpp      # 阻塞 run(true) 端到端测试
+│   ├── TestYomkRos2Blocking.cpp      # 阻塞 run(true) 端到端测试
+│   └── TestYomkROS2API.cpp           # 宏 API 阻塞模式测试（永久阻塞，Ctrl+C 退出）
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板
 ├── CMakeLists.txt              # CMake 构建配置
@@ -115,6 +130,41 @@ node.registerPubTopic<MyCustomMsg>("custom_topic", 10);
 MyCustomMsg msg;                          // 直接传入自定义类型
 node.publish<MyCustomMsg>("custom_topic", msg);
 ```
+
+### 宏 API 用法
+
+```cpp
+#include <YomkROS2/YomkROSAPI.h>
+#include <std_msgs/msg/string.hpp>
+
+int main(int argc, char *argv[])
+{
+    // 1. 初始化节点（仅 init，不启动运行）
+    YOMKROS2_NODE(argc, argv, "my_node");
+
+    // 2. 注册订阅主题（回调体内若含顶层逗号，先定义为变量再传入）
+    YOMKROS2_SUB_TOPIC(std_msgs::msg::String, "chatter", 10,
+        [](std::shared_ptr<const std_msgs::msg::String> msg)
+        {
+            // 收到消息 msg->data
+        });
+
+    // 3. 注册发布主题并发送消息（可在其他线程/回调中发布）
+    YOMKROS2_PUB_TOPIC(std_msgs::msg::String, "chatter", 10);
+    std_msgs::msg::String msg;
+    msg.data = "hello";
+    YOMKROS2_PUB_MSG("chatter", msg);
+
+    // 4. 阻塞运行直至 shutdown（典型 main 用法，防止程序退出）
+    YOMKROS2_RUN(true);
+
+    // 5. 退出前显式销毁（run 返回后执行）
+    YOMKROS2_SHUTDOWN();
+    return 0;
+}
+```
+
+> 阻塞模式下 publish 需在回调或其他线程中进行；shutdown 可由信号处理或辅助线程触发。精细控制（多节点、自定义生命周期）请使用 ROS2Node 类。
 
 ## 开发状态
 
