@@ -10,6 +10,12 @@ TEST_DIR="${SCRIPT_DIR}/test"
 TEST_BUILD_DIR="${TEST_DIR}/build"
 _ORIG_DIR="$(pwd)"
 
+# 检测 ROS2 环境：未 source 时自动 source /opt/ros/humble
+if [ -z "${AMENT_PREFIX_PATH}" ] && [ -f /opt/ros/humble/setup.bash ]; then
+    echo "未检测到 ROS2 环境，自动 source /opt/ros/humble/setup.bash"
+    source /opt/ros/humble/setup.bash
+fi
+
 # 解析用户传入的 cmake 参数
 YOMK_SERVER_PATH=""
 USER_INSTALL_PREFIX=""

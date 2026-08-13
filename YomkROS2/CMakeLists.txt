@@ -1,25 +1,21 @@
 cmake_minimum_required(VERSION 3.14)
-project(YomkROS2 VERSION 0.0.1 LANGUAGES CXX)
+project(YomkROS2 VERSION 0.0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(YomkServer REQUIRED)
-message(STATUS "YomkServer version: ${YomkServer_VERSION}")
-message(STATUS "YomkServer include dirs: ${YomkServer_INCLUDE_DIRS}")
-message(STATUS "YomkServer lib dir: ${YomkServer_LIB_DIR}")
-message(STATUS "YomkServer libraries: ${YomkServer_LIBRARIES}")
-include_directories(${YomkServer_INCLUDE_DIRS})
-link_directories(${YomkServer_LIB_DIR})
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # 编译为动态库
 add_library(${PROJECT_NAME} SHARED
-    src/YomkRos2Service.cpp
+    src/ROS2Node.cpp
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE YomkServer::YomkServer)
-target_compile_definitions(${PROJECT_NAME} PRIVATE YOMKROS2_VERSION="${PROJECT_VERSION}")
+target_link_libraries(${PROJECT_NAME}
+    PUBLIC rclcpp::rclcpp std_msgs::std_msgs
+)
 
 # 安装规则
 set(INCLUDE_INSTALL_DIR "include/${PROJECT_NAME}")

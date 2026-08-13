@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(YomkServer REQUIRED)
 find_package(YomkROS2 REQUIRED)
+find_package(std_msgs REQUIRED)
 message(STATUS "YomkServer version: ${YomkServer_VERSION}")
 message(STATUS "YomkServer include dirs: ${YomkServer_INCLUDE_DIRS}")
 message(STATUS "YomkServer lib dir: ${YomkServer_LIB_DIR}")
@@ -18,4 +19,4 @@ include_directories(${YomkServer_INCLUDE_DIRS})
 link_directories(${YomkServer_LIB_DIR})
 
 add_executable(TestYomkRos2 TestYomkRos2.cpp)
-target_link_libraries(TestYomkRos2 PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer)
+target_link_libraries(TestYomkRos2 PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)
