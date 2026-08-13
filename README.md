@@ -20,6 +20,7 @@ YomkExtensions/
 ├── YomkMath/          # 数学计算扩展（基础运算、高级函数等）
 ├── YomkLogAnalyzer/   # 日志分析扩展（日志解析、统计、告警等）
 ├── YomkRpc/           # RPC 分布式通信扩展（开发中）
+├── YomkROS2/          # ROS2 通信扩展（开发中）
 └── ...                # 更多扩展将持续添加
 ```
 

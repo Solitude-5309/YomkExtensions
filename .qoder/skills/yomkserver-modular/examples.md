@@ -78,7 +78,7 @@ private:
 
 int MyBoot::before()
 {
-    YOMK_INFO_TAG("MyBoot::before", "ProjectName starting...");
+    YOMK_INFO_TAG("MyBoot::before", "ProjectName v" APP_VERSION " starting...");
 
     // 通过 /proc/self/exe 推导配置文件路径
     std::filesystem::path exePath = std::filesystem::read_symlink("/proc/self/exe");
@@ -309,7 +309,7 @@ description: Create a new project based on YomkServer
 ### CMakeLists.txt
 ```cmake
 cmake_minimum_required(VERSION 3.14)
-project(ProjectName LANGUAGES CXX)
+project(ProjectName VERSION 2.2.9 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -326,6 +326,7 @@ add_executable(${PROJECT_NAME}
     boot/MyBoot.cpp
     services/ConfigService.cpp
 )
+target_compile_definitions(${PROJECT_NAME} PRIVATE APP_VERSION="${PROJECT_VERSION}")
 target_link_libraries(${PROJECT_NAME} PRIVATE
     YomkServer::YomkServer
     $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>
@@ -680,6 +681,7 @@ public:
     virtual int init() override;
 
 private:
+    YomkResponse getVersion(YomkPkgPtr pkg);
     YomkResponse add(YomkPkgPtr pkg);
     YomkResponse sub(YomkPkgPtr pkg);
     YomkResponse mul(YomkPkgPtr pkg);
@@ -699,12 +701,19 @@ XxxService::XxxService(YomkServer *server)
 
 int XxxService::init()
 {
+    YomkInstallFunc("/version", XxxService::getVersion);
     YomkInstallFunc("/add", XxxService::add);
     YomkInstallFunc("/sub", XxxService::sub);
     YomkInstallFunc("/mul", XxxService::mul);
     YomkInstallFunc("/div", XxxService::div);
-    YOMK_INFO_TAG("XxxService::init", "install func [ /add /sub /mul /div ] to", name());
+    YOMK_INFO_TAG("XxxService::init", "install func [ /version /add /sub /mul /div ] to", name());
     return 0;
+}
+
+YomkResponse XxxService::getVersion(YomkPkgPtr pkg)
+{
+    std::string version = "ExtensionName v" EXTENSION_VERSION " (WIP)";
+    return YomkResponse(YomkResponse::eOk, "ok", YomkMkPtr(String, version));
 }
 
 YomkResponse XxxService::add(YomkPkgPtr pkg)
@@ -1014,6 +1023,7 @@ add_library(${PROJECT_NAME} SHARED
     src/XxxService.cpp
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE YomkServer::YomkServer)
+target_compile_definitions(${PROJECT_NAME} PRIVATE EXTENSION_VERSION="${PROJECT_VERSION}")
 
 # 安装规则
 set(INCLUDE_INSTALL_DIR "include/${PROJECT_NAME}")
@@ -1064,6 +1074,7 @@ install(FILES
 
 | URL | 功能 | 说明 |
 |-----|------|------|
+| `/XxxService/version` | 版本查询 | 返回扩展版本信息 |
 | `/XxxService/add` | 加法 | 返回 a + b |
 | `/XxxService/sub` | 减法 | 返回 a - b |
 | `/XxxService/mul` | 乘法 | 返回 a * b |

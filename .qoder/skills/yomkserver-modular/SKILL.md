@@ -74,6 +74,7 @@ ProjectName/
 4. 安装固定到源码下 `install/`（`bin/ + config/ + setup.bash`）
 5. `build.sh` 用 `source` 执行，自动编译+安装+加载环境
 6. `build.sh`、`setup.bash.in` 不含工程名；`CMakeLists.txt`、`main.cpp`、`README.md` 使用用户指定工程名
+7. **版本号传递**：`project()` 的 `VERSION` 通过 `target_compile_definitions(${PROJECT_NAME} PRIVATE APP_VERSION="${PROJECT_VERSION}")` 编译期注入，启动日志中以字符串拼接输出，如 `"ProjectName v" APP_VERSION " starting..."`
 
 ### 生成规则
 
@@ -176,6 +177,7 @@ ExtensionName/
 4. `build.sh` 支持可选编译测试程序（`test/` 有独立 CMakeLists）
 5. 测试程序通过 `YOMK_NEW_SERVICE` 注册服务并验证功能
 6. **数据源无关原则**：扩展只负责处理逻辑，不关心数据来源。所有外部数据（如文件内容、路径等）必须通过请求参数传入，扩展内部不硬编码任何数据源
+7. **版本号传递**：`project()` 的 `VERSION` 通过 `target_compile_definitions(${PROJECT_NAME} PRIVATE XXX_VERSION="${PROJECT_VERSION}")` 编译期注入版本宏，服务内以字符串拼接返回，如 `"YomkRpc v" YOMKRPC_VERSION " (WIP)"`
 
 ### 生成规则
 
