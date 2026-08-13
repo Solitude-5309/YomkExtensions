@@ -28,14 +28,46 @@ namespace yomk
         node_ = std::make_shared<rclcpp::Node>(nodeName);
         // MultiThreadedExecutor：线程数默认 hardware_concurrency；
         // 配合 registerSubTopic 中每订阅独立的回调组，实现跨主题回调并发，
-        // 慢/阻塞回调最多占用一个线程，不会饿死其他主题的回调
+        // 慢/阻塞回调最多占用一个线程，不会饿死其他主题的回调。
+        // 本接口仅初始化，spin 由 run() 启动
         executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
         executor_->add_node(node_);
-        spinThread_ = std::thread([this]()
-                                  { executor_->spin(); });
 
         ownRclcppInit_ = needRclcppInit;
         initialized_ = true;
+        return true;
+    }
+
+    bool ROS2Node::run(bool blocking)
+    {
+        {
+            std::lock_guard<std::mutex> lock(mtx_);
+            if (!initialized_ || running_)
+            {
+                return false; // 未初始化或已在运行
+            }
+            running_ = true;
+            if (!blocking)
+            {
+                spinThread_ = std::thread([this]()
+                                          {
+                                              executor_->spin();
+                                              {
+                                                  std::lock_guard<std::mutex> lock(mtx_);
+                                                  running_ = false;
+                                              }
+                                              spinExitedCv_.notify_all(); });
+                return true;
+            }
+        }
+        // 阻塞模式：锁外在当前线程运行 spin（register/publish 均需要 mtx_），
+        // shutdown() -> cancel() 后返回
+        executor_->spin();
+        {
+            std::lock_guard<std::mutex> lock(mtx_);
+            running_ = false;
+        }
+        spinExitedCv_.notify_all();
         return true;
     }
 
@@ -61,10 +93,17 @@ namespace yomk
             threadToJoin = std::move(spinThread_);
         }
 
-        // 停止 spin 主循环线程并等待退出
+        // 停止 spin（后台线程或阻塞中的当前线程）：cancel 后等待 running_ 清零，
+        // 确保无线程仍在使用 executor 后再销毁它（阻塞模式下 spin 运行在调用方线程，
+        // 没有可 join 的线程，必须显式等待 spin 返回）
         if (executor)
         {
             executor->cancel();
+        }
+        {
+            std::unique_lock<std::mutex> lock(mtx_);
+            spinExitedCv_.wait(lock, [this]()
+                               { return !running_; });
         }
         if (threadToJoin.joinable())
         {

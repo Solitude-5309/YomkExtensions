@@ -107,8 +107,16 @@ if [ "${BUILD_TEST}" = "ON" ]; then
 
     # 运行测试
     echo ""
-    echo "========== 运行测试程序 =========="
-    "TestYomkRos2"
+    echo "========== 运行非阻塞测试 =========="
+    "TestYomkRos2NonBlocking"
+    TEST_NONBLOCKING_RESULT=$?
+    echo ""
+    echo "========== 运行阻塞测试 =========="
+    "TestYomkRos2Blocking"
+    TEST_BLOCKING_RESULT=$?
+    if [ ${TEST_NONBLOCKING_RESULT} -ne 0 ] || [ ${TEST_BLOCKING_RESULT} -ne 0 ]; then
+        echo "存在测试失败：NonBlocking=${TEST_NONBLOCKING_RESULT} Blocking=${TEST_BLOCKING_RESULT}"
+    fi
 fi
 
 # 返回原目录

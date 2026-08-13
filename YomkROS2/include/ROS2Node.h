@@ -1,5 +1,6 @@
 #pragma once
 
+#include <condition_variable>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -18,6 +19,7 @@ namespace yomk
     // - 模板方法内联于本头文件，实例化发生在调用者编译单元，
     //   支持任意 rosidl 类型（含用户自定义类型）
     // - 内部用 rclcpp 基类指针存储实体，type_index 校验注册类型与调用类型一致
+    // - init 仅初始化，节点运行由 run() 启动：blocking=false 后台线程运行，blocking=true 当前线程阻塞运行
     // - 订阅回调由 MultiThreadedExecutor 线程池驱动，每个订阅持有独立 MutuallyExclusive 回调组：
     //   跨主题回调可并发（慢回调不会阻塞其他主题），同主题回调串行保序
     //   【线程安全提示】用户回调须自行保证共享数据的线程安全（如加锁）；
@@ -31,11 +33,15 @@ namespace yomk
         ROS2Node &operator=(const ROS2Node &) = delete;
 
     public:
-        // 初始化 ROS2：命令行参数、节点名称，并启动后台 spin 线程池
-        // （MultiThreadedExecutor，线程数默认 hardware_concurrency）
+        // 初始化 ROS2：命令行参数、节点名称（仅初始化，不启动运行，需调用 run()）
         // 进程级 rclcpp::init 仅执行一次，重复调用本接口返回 false
         bool init(int argc, char **argv, const std::string &nodeName);
-        // 显式销毁节点与全部发布/订阅实体，停止 spin 线程（退出前建议调用）
+        // 运行节点，开始执行订阅回调（MultiThreadedExecutor 线程池驱动 spin）
+        // blocking=false：启动后台线程运行 spin，立即返回；
+        // blocking=true：在当前线程运行 spin，阻塞直到 shutdown() 被调用。
+        // 未初始化或已在运行时返回 false；请勿在回调内调用 shutdown/run（会死锁）
+        bool run(bool blocking = false);
+        // 显式销毁节点与全部发布/订阅实体，停止 spin（退出前建议调用）
         bool shutdown();
         // 是否已初始化
         bool isInitialized() const;
@@ -62,7 +68,9 @@ namespace yomk
         std::map<std::string, std::type_index> pubTypes_;
         std::map<std::string, std::type_index> subTypes_;
         mutable std::mutex mtx_;
+        std::condition_variable spinExitedCv_; // spin 退出（后台线程或阻塞线程）后通知 shutdown
         bool initialized_ = false;
+        bool running_ = false;       // run 已启动 spin（后台线程或当前线程阻塞中）
         bool ownRclcppInit_ = false; // 本实例执行过 rclcpp::init，shutdown 时对称调用 rclcpp::shutdown
     };
 

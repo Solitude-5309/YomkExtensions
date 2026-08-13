@@ -16,7 +16,8 @@
 
 | 接口 | 功能 | 说明 |
 |------|------|------|
-| `init(argc, argv, nodeName)` | 初始化 | 命令行参数、节点名称、启动后台阻塞 spin 线程 |
+| `init(argc, argv, nodeName)` | 初始化 | 命令行参数、节点名称；仅初始化，不启动运行 |
+| `run(blocking = false)` | 运行节点 | `false`：后台线程运行 spin，立即返回；`true`：当前线程阻塞运行，直至 `shutdown()` |
 | `registerPubTopic<T>(topic, queueSize)` | 注册发布主题 | 主题名、缓存队列长度 |
 | `registerSubTopic<T>(topic, queueSize, cb)` | 注册订阅主题 | 主题名、队列长度、回调 |
 | `publish<T>(topic, data)` | 发布数据 | 主题名、数据包 |
@@ -39,7 +40,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本编译安装主库后自动编译并运行 `TestYomkRos2`，并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本编译安装主库后自动编译并依次运行 `TestYomkRos2NonBlocking`（非阻塞）与 `TestYomkRos2Blocking`（阻塞），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
@@ -50,8 +51,9 @@ YomkROS2/
 ├── src/
 │   └── ROS2Node.cpp         # ROS2Node 非模板方法实现
 ├── test/
-│   ├── CMakeLists.txt       # 测试程序构建
-│   └── TestYomkRos2.cpp     # ROS2Node 端到端测试
+│   ├── CMakeLists.txt                # 测试程序构建
+│   ├── TestYomkRos2NonBlocking.cpp   # 非阻塞 run(false) 端到端测试
+│   └── TestYomkRos2Blocking.cpp      # 阻塞 run(true) 端到端测试
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板
 ├── CMakeLists.txt              # CMake 构建配置
@@ -84,12 +86,16 @@ int main(int argc, char *argv[])
     // 3. 注册发布主题
     node.registerPubTopic<std_msgs::msg::String>("chatter", 10);
 
-    // 4. 发布数据
+    // 4. 运行节点：run(false) 后台线程运行立即返回；
+    //    run(true) 阻塞当前线程直至 shutdown()（适合主线程直接运行）
+    node.run(false);
+
+    // 5. 发布数据
     std_msgs::msg::String msg;
     msg.data = "hello";
     node.publish<std_msgs::msg::String>("chatter", msg);
 
-    // 5. 退出前显式销毁
+    // 6. 退出前显式销毁
     node.shutdown();
     return 0;
 }
