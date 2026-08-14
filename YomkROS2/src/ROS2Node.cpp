@@ -125,6 +125,8 @@ namespace yomk
             subGroups_.clear();
             subTypes_.clear();
             pubTypes_.clear();
+            paramClients_.clear();
+            paramCallbacks_.clear();
         }
 
         // 仅销毁本实例创建的进程级 ROS2 上下文，不干扰用户自行初始化的环境
@@ -139,6 +141,161 @@ namespace yomk
     {
         std::lock_guard<std::mutex> lock(mtx_);
         return initialized_;
+    }
+
+    // ---- 参数接口非模板方法实现 ----
+
+    bool ROS2Node::hasParam(const std::string &name) const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "hasParam [%s] failed: node not initialized", name.c_str());
+            return false;
+        }
+        return node_->has_parameter(name);
+    }
+
+    bool ROS2Node::undeclareParam(const std::string &name)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "undeclareParam [%s] failed: node not initialized", name.c_str());
+            return false;
+        }
+        if (!node_->has_parameter(name))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "undeclareParam [%s] failed: parameter not declared", name.c_str());
+            return false;
+        }
+        try
+        {
+            node_->undeclare_parameter(name);
+        }
+        catch (const std::exception &e)
+        {
+            // 数组类型参数声明后为静态类型，rclcpp 不允许撤销声明
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "undeclareParam [%s] failed: %s", name.c_str(), e.what());
+            return false;
+        }
+        return true;
+    }
+
+    std::vector<std::string> ROS2Node::listParams() const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "listParams failed: node not initialized");
+            return {};
+        }
+        return node_->list_parameters({}, 0).names;
+    }
+
+    uint64_t ROS2Node::addOnSetParamCallback(std::function<bool(const std::vector<rclcpp::Parameter> &)> cb)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "addOnSetParamCallback failed: node not initialized");
+            return 0;
+        }
+        const uint64_t id = paramCallbackNextId_++;
+        auto handle = node_->add_on_set_parameters_callback(
+            [cb](const std::vector<rclcpp::Parameter> &params)
+            {
+                rcl_interfaces::msg::SetParametersResult result;
+                result.successful = cb(params);
+                if (!result.successful)
+                {
+                    result.reason = "rejected by callback";
+                }
+                return result;
+            });
+        paramCallbacks_[id] = handle;
+        return id;
+    }
+
+    void ROS2Node::removeOnSetParamCallback(uint64_t handleId)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        auto it = paramCallbacks_.find(handleId);
+        if (it == paramCallbacks_.end())
+        {
+            return;
+        }
+        if (initialized_)
+        {
+            node_->remove_on_set_parameters_callback(it->second.get());
+        }
+        paramCallbacks_.erase(it);
+    }
+
+    bool ROS2Node::hasRemoteParam(const std::string &remoteNodeName, const std::string &name)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "hasRemoteParam [%s/%s] failed: node not initialized", remoteNodeName.c_str(), name.c_str());
+            return false;
+        }
+        auto client = getOrCreateParamClient(remoteNodeName);
+        if (!client)
+        {
+            return false;
+        }
+        // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）
+        auto future = client->get_parameters({name});
+        if (future.wait_for(std::chrono::seconds(1)) != std::future_status::ready)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "hasRemoteParam [%s/%s] failed: timeout waiting for response", remoteNodeName.c_str(), name.c_str());
+            return false;
+        }
+        const auto params = future.get();
+        return params.size() == 1 && params[0].get_type() != rclcpp::ParameterType::PARAMETER_NOT_SET;
+    }
+
+    std::vector<std::string> ROS2Node::listRemoteParams(const std::string &remoteNodeName)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "listRemoteParams [%s] failed: node not initialized", remoteNodeName.c_str());
+            return {};
+        }
+        auto client = getOrCreateParamClient(remoteNodeName);
+        if (!client)
+        {
+            return {};
+        }
+        // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）
+        auto future = client->list_parameters({}, 0);
+        if (future.wait_for(std::chrono::seconds(1)) != std::future_status::ready)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "listRemoteParams [%s] failed: timeout waiting for response", remoteNodeName.c_str());
+            return {};
+        }
+        return future.get().names;
+    }
+
+    std::shared_ptr<rclcpp::AsyncParametersClient> ROS2Node::getOrCreateParamClient(const std::string &remoteNodeName)
+    {
+        auto it = paramClients_.find(remoteNodeName);
+        if (it != paramClients_.end())
+        {
+            return it->second;
+        }
+        // 异步客户端不 spin 也不占用节点 executor（与 SyncParametersClient 不同），
+        // 响应由本节点自身的 spin 处理，故调用方需已 run 运行
+        auto client = std::make_shared<rclcpp::AsyncParametersClient>(node_, remoteNodeName);
+        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "param client [%s] failed: service not available", remoteNodeName.c_str());
+            return nullptr;
+        }
+        paramClients_[remoteNodeName] = client;
+        return client;
     }
 
 } // namespace yomk

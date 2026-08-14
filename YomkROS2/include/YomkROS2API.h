@@ -36,3 +36,39 @@ namespace yomk
 
 // 显式销毁节点与全部实体（退出前建议调用；不调用时析构兜底）
 #define YOMKROS2_SHUTDOWN() yomk::yomkROS2Node().shutdown()
+
+// ===== 参数接口（失败时接口内部输出 RCLCPP_ERROR 日志，成功无输出）=====
+// defaultValue 若含顶层逗号（如 std::vector<int64_t>{1, 2}），
+// 请先将值定义为变量再传入
+
+// 声明参数并取到值：首次声明返回 defaultValue，已存在返回现有值（幂等）
+#define YOMKROS2_DECLARE_PARAM(name, defaultValue) \
+    yomk::yomkROS2Node().declareParam(name, defaultValue)
+
+// 查询参数：不存在或类型不匹配返回 false
+#define YOMKROS2_GET_PARAM(name, out) yomk::yomkROS2Node().getParam(name, out)
+
+// 设置参数：未声明、类型不匹配或被 on-set 回调拒绝返回 false
+#define YOMKROS2_SET_PARAM(name, value) yomk::yomkROS2Node().setParam(name, value)
+
+// 参数是否存在
+#define YOMKROS2_HAS_PARAM(name) yomk::yomkROS2Node().hasParam(name)
+
+// 删除参数（撤销声明）
+#define YOMKROS2_UNDECLARE_PARAM(name) yomk::yomkROS2Node().undeclareParam(name)
+
+// 列出全部参数名
+#define YOMKROS2_LIST_PARAMS() yomk::yomkROS2Node().listParams()
+
+// 远程参数（内部自动创建同步客户端并等待服务，一次调用完成）
+#define YOMKROS2_GET_REMOTE_PARAM(remoteNode, name, out) \
+    yomk::yomkROS2Node().getRemoteParam(remoteNode, name, out)
+
+#define YOMKROS2_SET_REMOTE_PARAM(remoteNode, name, value) \
+    yomk::yomkROS2Node().setRemoteParam(remoteNode, name, value)
+
+#define YOMKROS2_HAS_REMOTE_PARAM(remoteNode, name) \
+    yomk::yomkROS2Node().hasRemoteParam(remoteNode, name)
+
+#define YOMKROS2_LIST_REMOTE_PARAMS(remoteNode) \
+    yomk::yomkROS2Node().listRemoteParams(remoteNode)

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <condition_variable>
+#include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -8,6 +10,7 @@
 #include <thread>
 #include <typeindex>
 #include <utility>
+#include <vector>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -58,6 +61,39 @@ namespace yomk
         template <typename T>
         bool publish(const std::string &topicName, const T &data);
 
+        // ===== 参数接口（一次调用完成；失败时输出 RCLCPP_ERROR 日志，成功无输出）=====
+
+        // 声明参数并返回当前值：首次声明返回 defaultValue，已存在返回现有值（幂等）；
+        // 未初始化或类型不匹配返回 defaultValue（并输出错误日志）
+        template <typename T>
+        T declareParam(const std::string &name, const T &defaultValue);
+        // 查询参数：不存在或类型不匹配返回 false
+        template <typename T>
+        bool getParam(const std::string &name, T &out) const;
+        // 设置参数：未声明、类型不匹配或被 on-set 回调拒绝返回 false；
+        // 【注意】回调在锁内同步执行，勿在回调中调用本节点接口（会死锁）
+        template <typename T>
+        bool setParam(const std::string &name, const T &value);
+        // 参数是否存在
+        bool hasParam(const std::string &name) const;
+        // 删除参数（撤销声明）：带默认值声明的参数为静态类型（rclcpp 语义），
+        // 撤销失败返回 false 并输出错误日志；未声明返回 false
+        bool undeclareParam(const std::string &name);
+        // 列出全部参数名
+        std::vector<std::string> listParams() const;
+        // 注册 set 参数回调：返回 false 拒绝设置；返回句柄 id 供移除（未初始化返回 0）
+        uint64_t addOnSetParamCallback(std::function<bool(const std::vector<rclcpp::Parameter> &)> cb);
+        void removeOnSetParamCallback(uint64_t handleId);
+
+        // 远程参数（内部自动创建异步客户端，以 future 同步等待响应，一次调用完成；
+        // 响应由本节点自身的 spin 处理，故调用前需已 run 运行）
+        template <typename T>
+        bool getRemoteParam(const std::string &remoteNodeName, const std::string &name, T &out);
+        template <typename T>
+        bool setRemoteParam(const std::string &remoteNodeName, const std::string &name, const T &value);
+        bool hasRemoteParam(const std::string &remoteNodeName, const std::string &name);
+        std::vector<std::string> listRemoteParams(const std::string &remoteNodeName);
+
     private:
         std::shared_ptr<rclcpp::Node> node_;
         std::shared_ptr<rclcpp::Executor> executor_; // MultiThreadedExecutor
@@ -67,11 +103,17 @@ namespace yomk
         std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> subGroups_; // 持有各订阅的独立回调组（节点仅存弱引用）
         std::map<std::string, std::type_index> pubTypes_;
         std::map<std::string, std::type_index> subTypes_;
+        std::map<std::string, std::shared_ptr<rclcpp::AsyncParametersClient>> paramClients_; // 远程参数客户端（懒创建）
+        std::map<uint64_t, std::shared_ptr<rclcpp::node_interfaces::OnSetParametersCallbackHandle>> paramCallbacks_;
+        uint64_t paramCallbackNextId_ = 1;
         mutable std::mutex mtx_;
         std::condition_variable spinExitedCv_; // spin 退出（后台线程或阻塞线程）后通知 shutdown
         bool initialized_ = false;
         bool running_ = false;       // run 已启动 spin（后台线程或当前线程阻塞中）
         bool ownRclcppInit_ = false; // 本实例执行过 rclcpp::init，shutdown 时对称调用 rclcpp::shutdown
+
+        // 懒创建远程参数客户端（不加锁，调用方持锁）；失败返回 nullptr（已输出日志）
+        std::shared_ptr<rclcpp::AsyncParametersClient> getOrCreateParamClient(const std::string &remoteNodeName);
     };
 
     // ---- 模板方法实现（内联于头文件，实例化发生在调用者编译单元） ----
@@ -146,6 +188,152 @@ namespace yomk
             publisher = std::static_pointer_cast<rclcpp::Publisher<T>>(it->second);
         }
         publisher->publish(data);
+        return true;
+    }
+
+    // ---- 参数接口模板方法实现 ----
+
+    template <typename T>
+    T ROS2Node::declareParam(const std::string &name, const T &defaultValue)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "declareParam [%s] failed: node not initialized", name.c_str());
+            return defaultValue;
+        }
+        if (node_->has_parameter(name))
+        {
+            try
+            {
+                return node_->get_parameter(name).get_value<T>();
+            }
+            catch (const std::exception &e)
+            {
+                RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "declareParam [%s] failed: existing type mismatch (%s)", name.c_str(), e.what());
+                return defaultValue;
+            }
+        }
+        node_->declare_parameter(name, rclcpp::ParameterValue(defaultValue));
+        return defaultValue;
+    }
+
+    template <typename T>
+    bool ROS2Node::getParam(const std::string &name, T &out) const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getParam [%s] failed: node not initialized", name.c_str());
+            return false;
+        }
+        if (!node_->has_parameter(name))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getParam [%s] failed: parameter not declared", name.c_str());
+            return false;
+        }
+        try
+        {
+            out = node_->get_parameter(name).get_value<T>();
+            return true;
+        }
+        catch (const std::exception &e)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getParam [%s] failed: type mismatch (%s)", name.c_str(), e.what());
+            return false;
+        }
+    }
+
+    template <typename T>
+    bool ROS2Node::setParam(const std::string &name, const T &value)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "setParam [%s] failed: node not initialized", name.c_str());
+            return false;
+        }
+        if (!node_->has_parameter(name))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "setParam [%s] failed: parameter not declared", name.c_str());
+            return false;
+        }
+        rcl_interfaces::msg::SetParametersResult result = node_->set_parameter(rclcpp::Parameter(name, value));
+        if (!result.successful)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "setParam [%s] failed: %s", name.c_str(), result.reason.c_str());
+            return false;
+        }
+        return true;
+    }
+
+    template <typename T>
+    bool ROS2Node::getRemoteParam(const std::string &remoteNodeName, const std::string &name, T &out)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getRemoteParam [%s/%s] failed: node not initialized", remoteNodeName.c_str(), name.c_str());
+            return false;
+        }
+        auto client = getOrCreateParamClient(remoteNodeName);
+        if (!client)
+        {
+            return false;
+        }
+        // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）
+        auto future = client->get_parameters({name});
+        if (future.wait_for(std::chrono::seconds(1)) != std::future_status::ready)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getRemoteParam [%s/%s] failed: timeout waiting for response", remoteNodeName.c_str(), name.c_str());
+            return false;
+        }
+        const auto params = future.get();
+        if (params.size() != 1 || params[0].get_type() == rclcpp::ParameterType::PARAMETER_NOT_SET)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getRemoteParam [%s/%s] failed: parameter not found", remoteNodeName.c_str(), name.c_str());
+            return false;
+        }
+        try
+        {
+            out = params[0].get_value<T>();
+            return true;
+        }
+        catch (const std::exception &e)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getRemoteParam [%s/%s] failed: %s", remoteNodeName.c_str(), name.c_str(), e.what());
+            return false;
+        }
+    }
+
+    template <typename T>
+    bool ROS2Node::setRemoteParam(const std::string &remoteNodeName, const std::string &name, const T &value)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "setRemoteParam [%s/%s] failed: node not initialized", remoteNodeName.c_str(), name.c_str());
+            return false;
+        }
+        auto client = getOrCreateParamClient(remoteNodeName);
+        if (!client)
+        {
+            return false;
+        }
+        // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）
+        auto future = client->set_parameters({rclcpp::Parameter(name, value)});
+        if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "setRemoteParam [%s/%s] failed: timeout waiting for response", remoteNodeName.c_str(), name.c_str());
+            return false;
+        }
+        const auto results = future.get();
+        if (results.empty() || !results[0].successful)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "setRemoteParam [%s/%s] failed: %s", remoteNodeName.c_str(), name.c_str(),
+                         results.empty() ? "empty response" : results[0].reason.c_str());
+            return false;
+        }
         return true;
     }
 

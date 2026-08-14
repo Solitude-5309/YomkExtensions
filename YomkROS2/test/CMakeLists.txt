@@ -26,3 +26,6 @@ target_link_libraries(TestYomkROS2Blocking PRIVATE YomkROS2::YomkROS2 YomkServer
 
 add_executable(TestYomkROS2API TestYomkROS2API.cpp)
 target_link_libraries(TestYomkROS2API PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)
+
+add_executable(TestYomkROS2Param TestYomkROS2Param.cpp)
+target_link_libraries(TestYomkROS2Param PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)

@@ -130,8 +130,14 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     kill -INT ${TEST_API_PID} 2>/dev/null
     wait ${TEST_API_PID}
     TEST_API_RESULT=$?
-    if [ ${TEST_NONBLOCKING_RESULT} -ne 0 ] || [ ${TEST_BLOCKING_RESULT} -ne 0 ] || [ ${TEST_API_RESULT} -ne 0 ]; then
-        echo "存在测试失败：NonBlocking=${TEST_NONBLOCKING_RESULT} Blocking=${TEST_BLOCKING_RESULT} API=${TEST_API_RESULT}"
+    echo ""
+    echo "========== 运行参数接口测试（非阻塞模式）=========="
+    # 参数测试为前台运行的非阻塞用例：宏单例与远程节点均 run(false) 后台 spin
+    # （异步客户端 future 的响应依赖本地 spin），全部用例执行完毕后自行退出
+    "TestYomkROS2Param"
+    TEST_PARAM_RESULT=$?
+    if [ ${TEST_NONBLOCKING_RESULT} -ne 0 ] || [ ${TEST_BLOCKING_RESULT} -ne 0 ] || [ ${TEST_API_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ]; then
+        echo "存在测试失败：NonBlocking=${TEST_NONBLOCKING_RESULT} Blocking=${TEST_BLOCKING_RESULT} API=${TEST_API_RESULT} Param=${TEST_PARAM_RESULT}"
     fi
 fi
 
