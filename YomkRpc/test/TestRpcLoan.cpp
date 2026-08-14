@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <mutex>
+#include <string>
 #include <thread>
 
 using namespace yomk;
@@ -12,7 +13,7 @@ using namespace yomk;
 static int g_pass = 0;
 static int g_fail = 0;
 
-void check(const char *name, bool condition)
+void check(const std::string &name, bool condition)
 {
     if (condition)
     {
@@ -37,20 +38,20 @@ int main(int argc, char *argv[])
     // 测试创建节点
     YOMK_INFO_TAG("TestRpcLoan", "=== Test YomkRpcService::createNode ===");
     auto resp = YOMKRPC_NODE(0, "node0");
-    check("createNode node0", resp.m_status == YomkResponse::eOk);
+    check("createNode node0: status=" + std::to_string(static_cast<int>(resp.m_status)), resp.m_status == YomkResponse::eOk);
 
     // 测试非 plain 类型 loan 回退：MString 不可 loan，outPtr 应保持 nullptr
     YOMK_INFO_TAG("TestRpcLoan", "=== Test loan fallback (non-plain MString) ===");
     resp = YOMKRPC_PUB_TOPIC("node0", "fallback_topic", new YomkRpc::MStringPubSubType());
-    check("registerPubTopic fallback_topic", resp.m_status == YomkResponse::eOk);
+    check("registerPubTopic fallback_topic: status=" + std::to_string(static_cast<int>(resp.m_status)), resp.m_status == YomkResponse::eOk);
     void *loanPtr = nullptr;
     YOMKRPC_LOAN("node0", "fallback_topic", loanPtr);
-    check("loan returns nullptr for non-plain type", loanPtr == nullptr);
+    check("loan fallback: non-plain MString 借出返回 nullptr（回退普通发布）", loanPtr == nullptr);
 
     // 测试 plain 类型 loan 全链路（MInt32 为纯基础类型，FINAL 后 is_plain 为 true）
     YOMK_INFO_TAG("TestRpcLoan", "=== Test loan publish (plain MInt32) ===");
     resp = YOMKRPC_PUB_TOPIC("node0", "loan_topic", new YomkRpc::MInt32PubSubType());
-    check("registerPubTopic loan_topic", resp.m_status == YomkResponse::eOk);
+    check("registerPubTopic loan_topic: status=" + std::to_string(static_cast<int>(resp.m_status)), resp.m_status == YomkResponse::eOk);
 
     std::atomic<int> loanReceived{0};
     std::mutex loanMtx;
@@ -61,10 +62,10 @@ int main(int argc, char *argv[])
         std::lock_guard<std::mutex> lock(loanMtx);
         lastLoanValue = msg->data();
         loanReceived++;
-        YOMK_INFO_TAG("TestRpcLoan", "Loan received: ", msg->data());
+        YOMK_INFO_TAG("TestRpcLoan", "[RECV] 收到借出消息: ", msg->data());
     };
     resp = YOMKRPC_SUB_TOPIC("node0", "loan_topic", new YomkRpc::MInt32PubSubType(), onLoan);
-    check("registerSubTopic loan_topic", resp.m_status == YomkResponse::eOk);
+    check("registerSubTopic loan_topic: status=" + std::to_string(static_cast<int>(resp.m_status)), resp.m_status == YomkResponse::eOk);
 
     // 等待 DDS discovery 完成
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -77,6 +78,7 @@ int main(int argc, char *argv[])
         if (loanPtr == nullptr)
         {
             loanPublished = false;
+            YOMK_ERROR_TAG("TestRpcLoan", "[SEND] 借出失败: 第 ", i, " 次 loan 返回 nullptr");
             break;
         }
         static_cast<YomkRpc::MInt32 *>(loanPtr)->data(100 + i);
@@ -84,35 +86,43 @@ int main(int argc, char *argv[])
         if (resp.m_status != YomkResponse::eOk)
         {
             loanPublished = false;
+            YOMK_ERROR_TAG("TestRpcLoan", "[SEND] 借出发布失败: ", 100 + i, " status=", static_cast<int>(resp.m_status));
             break;
         }
+        YOMK_INFO_TAG("TestRpcLoan", "[SEND] 借出发布: ", 100 + i);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    check("loan sample publish 5 messages", loanPublished);
+    check("loan sample publish 5 messages: 发送=5", loanPublished);
 
     // 等待接收完成，首条消息可能因 discovery 时序丢失，收到 4 条以上视为通过
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    YOMK_INFO_TAG("TestRpcLoan", "Total loan received: ", loanReceived.load(), "/5");
-    check("loan subscriber received >= 4 messages", loanReceived.load() >= 4);
+    const int recvCount = loanReceived.load();
+    int32_t lastValueCopy = 0;
     {
         std::lock_guard<std::mutex> lock(loanMtx);
-        check("loan last value is 104", lastLoanValue == 104);
+        lastValueCopy = lastLoanValue;
+    }
+    YOMK_INFO_TAG("TestRpcLoan", "[RESULT] 接收=", recvCount, "/5 最后值=", lastValueCopy);
+    check("loan subscriber received >= 4 messages: 接收=" + std::to_string(recvCount) + "/5", recvCount >= 4);
+    {
+        std::lock_guard<std::mutex> lock(loanMtx);
+        check("loan last value is 104: 最后值=" + std::to_string(lastLoanValue), lastLoanValue == 104);
     }
 
     // 测试 discard：借出后放弃归还
     YOMK_INFO_TAG("TestRpcLoan", "=== Test discard loan ===");
     YOMKRPC_LOAN("node0", "loan_topic", loanPtr);
-    check("loan for discard", loanPtr != nullptr);
+    check("loan for discard: 借出指针=" + std::string(loanPtr != nullptr ? "非空" : "空"), loanPtr != nullptr);
     if (loanPtr != nullptr)
     {
         resp = YOMKRPC_DISCARD_LOAN("node0", "loan_topic", loanPtr);
-        check("discard loan", resp.m_status == YomkResponse::eOk);
+        check("discard loan: status=" + std::to_string(static_cast<int>(resp.m_status)), resp.m_status == YomkResponse::eOk);
     }
 
     // 退出前销毁节点，确保 DDS 实体在 FastDDS 静态资源销毁前清理
     YOMK_INFO_TAG("TestRpcLoan", "=== Test YomkRpcService::deleteNode ===");
     resp = YOMKRPC_DEL_NODE("node0");
-    check("deleteNode node0", resp.m_status == YomkResponse::eOk);
+    check("deleteNode node0: status=" + std::to_string(static_cast<int>(resp.m_status)), resp.m_status == YomkResponse::eOk);
 
     YOMK_INFO_TAG("TestRpcLoan", "========== Test Summary ==========");
     YOMK_INFO_TAG("TestRpcLoan", "PASS: ", g_pass);
