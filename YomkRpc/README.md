@@ -22,6 +22,7 @@
 - C++17 编译器
 - CMake >= 3.14
 - YomkServer 已安装
+- swig 与 python3-dev（msg 类型库 SWIG Python 绑定编译依赖）
 
 ## 编译
 
@@ -33,7 +34,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本编译安装主库后自动编译并依次运行 `TestRpcService`（服务接口端到端测试）与 `TestRpcLoan`（loan 借出机制专项测试），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本按三步流程执行：先编译安装主库（YomkRpc），再编译安装 msg 类型库（YomkRpcMsg，固定安装至 ~/YomkServer/install），最后编译并依次运行 `TestRpcService`（服务接口端到端测试）与 `TestRpcLoan`（loan 借出机制专项测试），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
@@ -47,7 +48,7 @@ YomkRpc/
 │   └── FastDDSNode.cpp     # DDS 节点实现
 ├── msg/
 │   ├── YomkRpcMsg.idl      # IDL 消息定义（如 MString）
-│   └── ...                 # fastddsgen 生成代码
+│   └── ...                 # fastddsgen 生成代码（独立类型库，含 SWIG Python 绑定）
 ├── test/
 │   ├── CMakeLists.txt       # 测试程序构建
 │   ├── TestRpcService.cpp   # 服务接口端到端测试

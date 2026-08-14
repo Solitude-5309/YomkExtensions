@@ -18,7 +18,7 @@ include_directories(${YomkServer_INCLUDE_DIRS})
 link_directories(${YomkServer_LIB_DIR})
 
 add_executable(TestRpcService TestRpcService.cpp)
-target_link_libraries(TestRpcService PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer)
+target_link_libraries(TestRpcService PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
 
 add_executable(TestRpcLoan TestRpcLoan.cpp)
-target_link_libraries(TestRpcLoan PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer)
+target_link_libraries(TestRpcLoan PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)

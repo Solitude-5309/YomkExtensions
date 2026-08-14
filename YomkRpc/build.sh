@@ -8,6 +8,8 @@ BUILD_DIR="${SCRIPT_DIR}/build"
 INSTALL_DIR="${SCRIPT_DIR}/install"
 TEST_DIR="${SCRIPT_DIR}/test"
 TEST_BUILD_DIR="${TEST_DIR}/build"
+MSG_DIR="${SCRIPT_DIR}/msg"
+MSG_BUILD_DIR="${MSG_DIR}/build"
 _ORIG_DIR="$(pwd)"
 
 # 解析用户传入的 cmake 参数
@@ -45,7 +47,7 @@ else
 fi
 
 # 编译安装主库
-echo "步骤 1/2: 编译 YomkRpc 主库"
+echo "步骤 1/3: 编译 YomkRpc 主库"
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}" || return 1
 
@@ -65,10 +67,32 @@ fi
 
 cd "${_ORIG_DIR}"
 
+# 编译 msg 类型库（fastddsgen 生成工程，含 SWIG Python 绑定）
+echo ""
+echo "步骤 2/3: 编译 msg 类型库"
+mkdir -p "${MSG_BUILD_DIR}"
+cd "${MSG_BUILD_DIR}" || return 1
+
+cmake "${MSG_DIR}" -DCMAKE_PREFIX_PATH=${HOME}/YomkServer/install -DCMAKE_INSTALL_PREFIX=${HOME}/YomkServer/install -DCMAKE_BUILD_TYPE=Release
+if [ $? -ne 0 ]; then
+    echo "msg cmake 配置失败"
+    cd "${_ORIG_DIR}"
+    return 1
+fi
+
+cmake --build . --config Release --target install
+if [ $? -ne 0 ]; then
+    echo "msg 编译安装失败"
+    cd "${_ORIG_DIR}"
+    return 1
+fi
+
+cd "${_ORIG_DIR}"
+
 # 编译测试程序
 if [ "${BUILD_TEST}" = "ON" ]; then
     echo ""
-    echo "步骤 2/2: 编译测试程序"
+    echo "步骤 3/3: 编译测试程序"
     mkdir -p "${TEST_BUILD_DIR}"
     cd "${TEST_BUILD_DIR}" || return 1
 
