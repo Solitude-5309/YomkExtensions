@@ -108,11 +108,12 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     # 运行测试
     echo ""
     echo "========== 运行主题宏测试（阻塞模式）=========="
-    # 主题测试遵循原生 ROS2 节点语义：run(true) 永久阻塞主线程，
-    # 此处后台运行并延时发送 SIGINT 模拟用户 Ctrl+C，验证阻塞 run 正常返回并清理
+    # 主题测试 run(true) 阻塞主线程：测试内部辅助线程以 PUB_MSG 发布 3 条消息、
+    # 订阅回调打印接收内容后 shutdown 唤醒阻塞 run，测试自行退出；
+    # 后台运行并延时 SIGINT 作为兜底，防止异常情况下挂死
     "TestYomkROS2Topic" &
     TEST_TOPIC_PID=$!
-    sleep 3
+    sleep 5
     kill -INT ${TEST_TOPIC_PID} 2>/dev/null
     wait ${TEST_TOPIC_PID}
     TEST_TOPIC_RESULT=$?

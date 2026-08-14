@@ -2,6 +2,7 @@
 #include <YomkROS2/YomkROS2API.h>
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -29,7 +30,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_NODE 初始化");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_NODE: 单例节点=param_node 远程服务端=remote_node（环境）");
         g_pass++;
     }
 
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_DECLARE_PARAM 默认值");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_DECLARE_PARAM: my_int=42（首次声明返回默认值）");
         g_pass++;
     }
 
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_DECLARE_PARAM 幂等");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_DECLARE_PARAM 幂等: my_int 再次声明 99 返回现有值 42");
         g_pass++;
     }
 
@@ -71,7 +72,18 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] 多类型声明读回");
+        std::ostringstream oss;
+        oss << "my_double=" << 3.14 << " my_string=hello my_bool=true my_vec=[";
+        for (std::size_t i = 0; i < vecDefault.size(); ++i)
+        {
+            if (i > 0)
+            {
+                oss << ",";
+            }
+            oss << vecDefault[i];
+        }
+        oss << "]";
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] 多类型声明读回: ", oss.str());
         g_pass++;
     }
 
@@ -84,7 +96,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_GET_PARAM 读值");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_GET_PARAM: my_int=", v);
         g_pass++;
     }
 
@@ -96,7 +108,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_SET_PARAM 设置");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_SET_PARAM: my_int 42 -> ", v);
         g_pass++;
     }
 
@@ -109,7 +121,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] 类型不匹配返回 false");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] 类型不匹配: my_int（整数）以 double 读返回 false");
         g_pass++;
     }
 
@@ -121,19 +133,25 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_HAS_PARAM 存在性判断");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_HAS_PARAM: my_int=true not_exist=false");
         g_pass++;
     }
 
     // 测试 9：宏列出全部参数名包含已声明参数
     bool listOk = false;
-    for (const auto &name : YOMKROS2_LIST_PARAMS())
+    std::string namesStr;
+    const auto names = YOMKROS2_LIST_PARAMS();
+    for (std::size_t i = 0; i < names.size(); ++i)
     {
-        if (name == "my_int")
+        if (names[i] == "my_int")
         {
             listOk = true;
-            break;
         }
+        if (i > 0)
+        {
+            namesStr += ", ";
+        }
+        namesStr += names[i];
     }
     if (!listOk)
     {
@@ -142,7 +160,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_LIST_PARAMS 包含参数名");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_LIST_PARAMS: 共 ", names.size(), " 个参数 [", namesStr, "]");
         g_pass++;
     }
 
@@ -156,7 +174,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_UNDECLARE_PARAM 静态类型不可撤销");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_UNDECLARE_PARAM: my_double 静态类型不可撤销返回 false，参数仍存在");
         g_pass++;
     }
 
@@ -169,7 +187,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_RUN 运行并声明远程参数");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_RUN(false): 后台 spin 启动，远程节点声明 remote_int=7");
         g_pass++;
     }
 
@@ -182,7 +200,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_GET_REMOTE_PARAM 读远程参数");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_GET_REMOTE_PARAM: remote_node/remote_int=", rv);
         g_pass++;
     }
 
@@ -195,7 +213,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_SET_REMOTE_PARAM 设远程参数");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_SET_REMOTE_PARAM: remote_node/remote_int 7 -> ", rv);
         g_pass++;
     }
 
@@ -208,19 +226,25 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_HAS_REMOTE_PARAM 存在性判断");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_HAS_REMOTE_PARAM: remote_int=true not_exist=false");
         g_pass++;
     }
 
     // 测试 15：宏列出远程参数名包含已声明参数
     bool listRemoteOk = false;
-    for (const auto &name : YOMKROS2_LIST_REMOTE_PARAMS("remote_node"))
+    std::string remoteNamesStr;
+    const auto remoteNames = YOMKROS2_LIST_REMOTE_PARAMS("remote_node");
+    for (std::size_t i = 0; i < remoteNames.size(); ++i)
     {
-        if (name == "remote_int")
+        if (remoteNames[i] == "remote_int")
         {
             listRemoteOk = true;
-            break;
         }
+        if (i > 0)
+        {
+            remoteNamesStr += ", ";
+        }
+        remoteNamesStr += remoteNames[i];
     }
     if (!listRemoteOk)
     {
@@ -229,7 +253,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_LIST_REMOTE_PARAMS 包含参数名");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_LIST_REMOTE_PARAMS: 共 ", remoteNames.size(), " 个参数 [", remoteNamesStr, "]");
         g_pass++;
     }
 
@@ -241,7 +265,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_SHUTDOWN 干净退出");
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_SHUTDOWN: 远程服务端与单例节点均已销毁");
         g_pass++;
     }
 
