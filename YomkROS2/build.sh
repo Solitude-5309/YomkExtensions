@@ -108,11 +108,11 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     # 运行测试
     echo ""
     echo "========== 运行非阻塞测试 =========="
-    "TestYomkRos2NonBlocking"
+    "TestYomkROS2NonBlocking"
     TEST_NONBLOCKING_RESULT=$?
     echo ""
     echo "========== 运行阻塞测试 =========="
-    "TestYomkRos2Blocking"
+    "TestYomkROS2Blocking"
     TEST_BLOCKING_RESULT=$?
     echo ""
     echo "========== 运行 API 宏测试（阻塞模式）=========="

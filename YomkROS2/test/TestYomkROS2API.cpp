@@ -1,5 +1,5 @@
 #include <YomkServer/YomkAPI.h>
-#include <YomkROS2/YomkROSAPI.h>
+#include <YomkROS2/YomkROS2API.h>
 
 #include <std_msgs/msg/string.hpp>
 

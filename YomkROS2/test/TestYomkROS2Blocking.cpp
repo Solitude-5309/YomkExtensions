@@ -23,12 +23,12 @@ int main(int argc, char *argv[])
     ROS2Node node;
     if (!node.init(argc, argv, "blocking_node"))
     {
-        YOMK_ERROR_TAG("TestYomkRos2Blocking", "[FAIL] ROS2Node init");
+        YOMK_ERROR_TAG("TestYomkROS2Blocking", "[FAIL] ROS2Node init");
         g_fail++;
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkRos2Blocking", "[PASS] ROS2Node init");
+        YOMK_INFO_TAG("TestYomkROS2Blocking", "[PASS] ROS2Node init");
         g_pass++;
     }
 
@@ -40,27 +40,27 @@ int main(int argc, char *argv[])
                                                       {
                                                           std::lock_guard<std::mutex> lock(recvMtx);
                                                           ++recvCount;
-                                                          YOMK_INFO_TAG("TestYomkRos2Blocking", "[RECV] ", msg->data);
+                                                          YOMK_INFO_TAG("TestYomkROS2Blocking", "[RECV] ", msg->data);
                                                       }))
     {
-        YOMK_ERROR_TAG("TestYomkRos2Blocking", "[FAIL] registerSubTopic");
+        YOMK_ERROR_TAG("TestYomkROS2Blocking", "[FAIL] registerSubTopic");
         g_fail++;
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkRos2Blocking", "[PASS] registerSubTopic");
+        YOMK_INFO_TAG("TestYomkROS2Blocking", "[PASS] registerSubTopic");
         g_pass++;
     }
 
     // 测试 3：注册发布主题
     if (!node.registerPubTopic<std_msgs::msg::String>("blocking_topic", 10))
     {
-        YOMK_ERROR_TAG("TestYomkRos2Blocking", "[FAIL] registerPubTopic");
+        YOMK_ERROR_TAG("TestYomkROS2Blocking", "[FAIL] registerPubTopic");
         g_fail++;
     }
     else
     {
-        YOMK_INFO_TAG("TestYomkRos2Blocking", "[PASS] registerPubTopic");
+        YOMK_INFO_TAG("TestYomkROS2Blocking", "[PASS] registerPubTopic");
         g_pass++;
     }
 
@@ -81,12 +81,12 @@ int main(int argc, char *argv[])
         std::lock_guard<std::mutex> lock(recvMtx);
         if (runReturned && recvCount >= 1)
         {
-            YOMK_INFO_TAG("TestYomkRos2Blocking", "[PASS] blocking run returned after shutdown, received ", recvCount, " message");
+            YOMK_INFO_TAG("TestYomkROS2Blocking", "[PASS] blocking run returned after shutdown, received ", recvCount, " message");
             g_pass++;
         }
         else
         {
-            YOMK_ERROR_TAG("TestYomkRos2Blocking", "[FAIL] blocking run: returned=", runReturned, " received=", recvCount);
+            YOMK_ERROR_TAG("TestYomkROS2Blocking", "[FAIL] blocking run: returned=", runReturned, " received=", recvCount);
             g_fail++;
         }
     }
