@@ -112,7 +112,13 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     TEST_NONBLOCKING_RESULT=$?
     echo ""
     echo "========== 运行阻塞测试 =========="
-    "TestYomkROS2Blocking"
+    # 阻塞测试 run(true) 永久阻塞主线程（shutdown 由信号触发），
+    # 后台运行并延时发送 SIGINT 模拟用户 Ctrl+C，验证阻塞 run 正常返回并清理
+    "TestYomkROS2Blocking" &
+    TEST_BLOCKING_PID=$!
+    sleep 3
+    kill -INT ${TEST_BLOCKING_PID} 2>/dev/null
+    wait ${TEST_BLOCKING_PID}
     TEST_BLOCKING_RESULT=$?
     echo ""
     echo "========== 运行 API 宏测试（阻塞模式）=========="
