@@ -101,8 +101,17 @@ if [ "${BUILD_TEST}" = "ON" ]; then
 
     # 运行测试
     echo ""
-    echo "========== 运行测试程序 =========="
+    echo "========== 运行服务接口测试 =========="
     "./TestRpcService"
+    TEST_SERVICE_RESULT=$?
+    echo ""
+    echo "========== 运行 loan 机制测试 =========="
+    "./TestRpcLoan"
+    TEST_LOAN_RESULT=$?
+    if [ ${TEST_SERVICE_RESULT} -ne 0 ] || [ ${TEST_LOAN_RESULT} -ne 0 ]; then
+        echo ""
+        echo "存在测试失败：TestRpcService=${TEST_SERVICE_RESULT} TestRpcLoan=${TEST_LOAN_RESULT}"
+    fi
 fi
 
 # 返回原目录

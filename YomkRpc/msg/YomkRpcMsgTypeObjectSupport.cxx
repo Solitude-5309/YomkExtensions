@@ -50,7 +50,7 @@ void register_MBool_type_identifier(
         "YomkRpc::MBool", type_ids_MBool);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MBool)
     {
-        StructTypeFlag struct_flags_MBool = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MBool = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MBool = "YomkRpc::MBool";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MBool;
@@ -108,7 +108,7 @@ void register_MByte_type_identifier(
         "YomkRpc::MByte", type_ids_MByte);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MByte)
     {
-        StructTypeFlag struct_flags_MByte = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MByte = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MByte = "YomkRpc::MByte";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MByte;
@@ -166,7 +166,7 @@ void register_MChar_type_identifier(
         "YomkRpc::MChar", type_ids_MChar);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MChar)
     {
-        StructTypeFlag struct_flags_MChar = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MChar = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MChar = "YomkRpc::MChar";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MChar;
@@ -224,7 +224,7 @@ void register_MUChar_type_identifier(
         "YomkRpc::MUChar", type_ids_MUChar);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUChar)
     {
-        StructTypeFlag struct_flags_MUChar = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUChar = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUChar = "YomkRpc::MUChar";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUChar;
@@ -282,7 +282,7 @@ void register_MInt8_type_identifier(
         "YomkRpc::MInt8", type_ids_MInt8);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt8)
     {
-        StructTypeFlag struct_flags_MInt8 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt8 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt8 = "YomkRpc::MInt8";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt8;
@@ -340,7 +340,7 @@ void register_MUInt8_type_identifier(
         "YomkRpc::MUInt8", type_ids_MUInt8);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt8)
     {
-        StructTypeFlag struct_flags_MUInt8 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt8 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt8 = "YomkRpc::MUInt8";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt8;
@@ -398,7 +398,7 @@ void register_MInt16_type_identifier(
         "YomkRpc::MInt16", type_ids_MInt16);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt16)
     {
-        StructTypeFlag struct_flags_MInt16 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt16 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt16 = "YomkRpc::MInt16";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt16;
@@ -456,7 +456,7 @@ void register_MUInt16_type_identifier(
         "YomkRpc::MUInt16", type_ids_MUInt16);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt16)
     {
-        StructTypeFlag struct_flags_MUInt16 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt16 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt16 = "YomkRpc::MUInt16";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt16;
@@ -514,7 +514,7 @@ void register_MInt32_type_identifier(
         "YomkRpc::MInt32", type_ids_MInt32);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt32)
     {
-        StructTypeFlag struct_flags_MInt32 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt32 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt32 = "YomkRpc::MInt32";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt32;
@@ -572,7 +572,7 @@ void register_MUInt32_type_identifier(
         "YomkRpc::MUInt32", type_ids_MUInt32);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt32)
     {
-        StructTypeFlag struct_flags_MUInt32 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt32 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt32 = "YomkRpc::MUInt32";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt32;
@@ -630,7 +630,7 @@ void register_MInt64_type_identifier(
         "YomkRpc::MInt64", type_ids_MInt64);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt64)
     {
-        StructTypeFlag struct_flags_MInt64 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt64 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt64 = "YomkRpc::MInt64";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt64;
@@ -688,7 +688,7 @@ void register_MUInt64_type_identifier(
         "YomkRpc::MUInt64", type_ids_MUInt64);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt64)
     {
-        StructTypeFlag struct_flags_MUInt64 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt64 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt64 = "YomkRpc::MUInt64";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt64;
@@ -746,7 +746,7 @@ void register_MFloat32_type_identifier(
         "YomkRpc::MFloat32", type_ids_MFloat32);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MFloat32)
     {
-        StructTypeFlag struct_flags_MFloat32 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MFloat32 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MFloat32 = "YomkRpc::MFloat32";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MFloat32;
@@ -804,7 +804,7 @@ void register_MFloat64_type_identifier(
         "YomkRpc::MFloat64", type_ids_MFloat64);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MFloat64)
     {
-        StructTypeFlag struct_flags_MFloat64 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MFloat64 = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MFloat64 = "YomkRpc::MFloat64";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MFloat64;
@@ -862,7 +862,7 @@ void register_MString_type_identifier(
         "YomkRpc::MString", type_ids_MString);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MString)
     {
-        StructTypeFlag struct_flags_MString = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MString = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MString = "YomkRpc::MString";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MString;
@@ -928,7 +928,7 @@ void register_MultiArrayDimension_type_identifier(
         "YomkRpc::MultiArrayDimension", type_ids_MultiArrayDimension);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MultiArrayDimension)
     {
-        StructTypeFlag struct_flags_MultiArrayDimension = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MultiArrayDimension = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MultiArrayDimension = "YomkRpc::MultiArrayDimension";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MultiArrayDimension;
@@ -1054,7 +1054,7 @@ void register_MultiArrayLayout_type_identifier(
         "YomkRpc::MultiArrayLayout", type_ids_MultiArrayLayout);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MultiArrayLayout)
     {
-        StructTypeFlag struct_flags_MultiArrayLayout = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MultiArrayLayout = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MultiArrayLayout = "YomkRpc::MultiArrayLayout";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MultiArrayLayout;
@@ -1172,7 +1172,7 @@ void register_MUCharArray_type_identifier(
         "YomkRpc::MUCharArray", type_ids_MUCharArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUCharArray)
     {
-        StructTypeFlag struct_flags_MUCharArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUCharArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUCharArray = "YomkRpc::MUCharArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUCharArray;
@@ -1262,7 +1262,7 @@ void register_MUCharMultiArray_type_identifier(
         "YomkRpc::MUCharMultiArray", type_ids_MUCharMultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUCharMultiArray)
     {
-        StructTypeFlag struct_flags_MUCharMultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUCharMultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUCharMultiArray = "YomkRpc::MUCharMultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUCharMultiArray;
@@ -1380,7 +1380,7 @@ void register_MByteArray_type_identifier(
         "YomkRpc::MByteArray", type_ids_MByteArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MByteArray)
     {
-        StructTypeFlag struct_flags_MByteArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MByteArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MByteArray = "YomkRpc::MByteArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MByteArray;
@@ -1470,7 +1470,7 @@ void register_MByteMultiArray_type_identifier(
         "YomkRpc::MByteMultiArray", type_ids_MByteMultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MByteMultiArray)
     {
-        StructTypeFlag struct_flags_MByteMultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MByteMultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MByteMultiArray = "YomkRpc::MByteMultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MByteMultiArray;
@@ -1588,7 +1588,7 @@ void register_MInt8Array_type_identifier(
         "YomkRpc::MInt8Array", type_ids_MInt8Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt8Array)
     {
-        StructTypeFlag struct_flags_MInt8Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt8Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt8Array = "YomkRpc::MInt8Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt8Array;
@@ -1678,7 +1678,7 @@ void register_MInt8MultiArray_type_identifier(
         "YomkRpc::MInt8MultiArray", type_ids_MInt8MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt8MultiArray)
     {
-        StructTypeFlag struct_flags_MInt8MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt8MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt8MultiArray = "YomkRpc::MInt8MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt8MultiArray;
@@ -1796,7 +1796,7 @@ void register_MUInt8Array_type_identifier(
         "YomkRpc::MUInt8Array", type_ids_MUInt8Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt8Array)
     {
-        StructTypeFlag struct_flags_MUInt8Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt8Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt8Array = "YomkRpc::MUInt8Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt8Array;
@@ -1886,7 +1886,7 @@ void register_MUInt8MultiArray_type_identifier(
         "YomkRpc::MUInt8MultiArray", type_ids_MUInt8MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt8MultiArray)
     {
-        StructTypeFlag struct_flags_MUInt8MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt8MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt8MultiArray = "YomkRpc::MUInt8MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt8MultiArray;
@@ -2004,7 +2004,7 @@ void register_MInt16Array_type_identifier(
         "YomkRpc::MInt16Array", type_ids_MInt16Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt16Array)
     {
-        StructTypeFlag struct_flags_MInt16Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt16Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt16Array = "YomkRpc::MInt16Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt16Array;
@@ -2094,7 +2094,7 @@ void register_MInt16MultiArray_type_identifier(
         "YomkRpc::MInt16MultiArray", type_ids_MInt16MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt16MultiArray)
     {
-        StructTypeFlag struct_flags_MInt16MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt16MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt16MultiArray = "YomkRpc::MInt16MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt16MultiArray;
@@ -2212,7 +2212,7 @@ void register_MUInt16Array_type_identifier(
         "YomkRpc::MUInt16Array", type_ids_MUInt16Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt16Array)
     {
-        StructTypeFlag struct_flags_MUInt16Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt16Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt16Array = "YomkRpc::MUInt16Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt16Array;
@@ -2302,7 +2302,7 @@ void register_MUInt16MultiArray_type_identifier(
         "YomkRpc::MUInt16MultiArray", type_ids_MUInt16MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt16MultiArray)
     {
-        StructTypeFlag struct_flags_MUInt16MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt16MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt16MultiArray = "YomkRpc::MUInt16MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt16MultiArray;
@@ -2420,7 +2420,7 @@ void register_MInt32Array_type_identifier(
         "YomkRpc::MInt32Array", type_ids_MInt32Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt32Array)
     {
-        StructTypeFlag struct_flags_MInt32Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt32Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt32Array = "YomkRpc::MInt32Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt32Array;
@@ -2510,7 +2510,7 @@ void register_MInt32MultiArray_type_identifier(
         "YomkRpc::MInt32MultiArray", type_ids_MInt32MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt32MultiArray)
     {
-        StructTypeFlag struct_flags_MInt32MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt32MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt32MultiArray = "YomkRpc::MInt32MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt32MultiArray;
@@ -2628,7 +2628,7 @@ void register_MUInt32Array_type_identifier(
         "YomkRpc::MUInt32Array", type_ids_MUInt32Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt32Array)
     {
-        StructTypeFlag struct_flags_MUInt32Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt32Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt32Array = "YomkRpc::MUInt32Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt32Array;
@@ -2718,7 +2718,7 @@ void register_MUInt32MultiArray_type_identifier(
         "YomkRpc::MUInt32MultiArray", type_ids_MUInt32MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt32MultiArray)
     {
-        StructTypeFlag struct_flags_MUInt32MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt32MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt32MultiArray = "YomkRpc::MUInt32MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt32MultiArray;
@@ -2836,7 +2836,7 @@ void register_MInt64Array_type_identifier(
         "YomkRpc::MInt64Array", type_ids_MInt64Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt64Array)
     {
-        StructTypeFlag struct_flags_MInt64Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt64Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt64Array = "YomkRpc::MInt64Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt64Array;
@@ -2926,7 +2926,7 @@ void register_MInt64MultiArray_type_identifier(
         "YomkRpc::MInt64MultiArray", type_ids_MInt64MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MInt64MultiArray)
     {
-        StructTypeFlag struct_flags_MInt64MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MInt64MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MInt64MultiArray = "YomkRpc::MInt64MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MInt64MultiArray;
@@ -3044,7 +3044,7 @@ void register_MUInt64Array_type_identifier(
         "YomkRpc::MUInt64Array", type_ids_MUInt64Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt64Array)
     {
-        StructTypeFlag struct_flags_MUInt64Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt64Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt64Array = "YomkRpc::MUInt64Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt64Array;
@@ -3134,7 +3134,7 @@ void register_MUInt64MultiArray_type_identifier(
         "YomkRpc::MUInt64MultiArray", type_ids_MUInt64MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MUInt64MultiArray)
     {
-        StructTypeFlag struct_flags_MUInt64MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MUInt64MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MUInt64MultiArray = "YomkRpc::MUInt64MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MUInt64MultiArray;
@@ -3252,7 +3252,7 @@ void register_MFloat32Array_type_identifier(
         "YomkRpc::MFloat32Array", type_ids_MFloat32Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MFloat32Array)
     {
-        StructTypeFlag struct_flags_MFloat32Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MFloat32Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MFloat32Array = "YomkRpc::MFloat32Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MFloat32Array;
@@ -3342,7 +3342,7 @@ void register_MFloat32MultiArray_type_identifier(
         "YomkRpc::MFloat32MultiArray", type_ids_MFloat32MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MFloat32MultiArray)
     {
-        StructTypeFlag struct_flags_MFloat32MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MFloat32MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MFloat32MultiArray = "YomkRpc::MFloat32MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MFloat32MultiArray;
@@ -3460,7 +3460,7 @@ void register_MFloat64Array_type_identifier(
         "YomkRpc::MFloat64Array", type_ids_MFloat64Array);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MFloat64Array)
     {
-        StructTypeFlag struct_flags_MFloat64Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MFloat64Array = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MFloat64Array = "YomkRpc::MFloat64Array";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MFloat64Array;
@@ -3550,7 +3550,7 @@ void register_MFloat64MultiArray_type_identifier(
         "YomkRpc::MFloat64MultiArray", type_ids_MFloat64MultiArray);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MFloat64MultiArray)
     {
-        StructTypeFlag struct_flags_MFloat64MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MFloat64MultiArray = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MFloat64MultiArray = "YomkRpc::MFloat64MultiArray";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MFloat64MultiArray;
@@ -3668,7 +3668,7 @@ void register_MColorRGBA_type_identifier(
         "YomkRpc::MColorRGBA", type_ids_MColorRGBA);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MColorRGBA)
     {
-        StructTypeFlag struct_flags_MColorRGBA = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MColorRGBA = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MColorRGBA = "YomkRpc::MColorRGBA";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MColorRGBA;
@@ -3816,7 +3816,7 @@ void register_MTime_type_identifier(
         "YomkRpc::MTime", type_ids_MTime);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MTime)
     {
-        StructTypeFlag struct_flags_MTime = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MTime = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MTime = "YomkRpc::MTime";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MTime;
@@ -3904,7 +3904,7 @@ void register_MDuration_type_identifier(
         "YomkRpc::MDuration", type_ids_MDuration);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MDuration)
     {
-        StructTypeFlag struct_flags_MDuration = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MDuration = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MDuration = "YomkRpc::MDuration";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MDuration;
@@ -3992,7 +3992,7 @@ void register_MHeader_type_identifier(
         "YomkRpc::MHeader", type_ids_MHeader);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_MHeader)
     {
-        StructTypeFlag struct_flags_MHeader = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_MHeader = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_MHeader = "YomkRpc::MHeader";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_MHeader;
@@ -4086,7 +4086,7 @@ void register_RequestPkg_type_identifier(
         "YomkRpc::RequestPkg", type_ids_RequestPkg);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_RequestPkg)
     {
-        StructTypeFlag struct_flags_RequestPkg = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_RequestPkg = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_RequestPkg = "YomkRpc::RequestPkg";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_RequestPkg;
@@ -4295,7 +4295,7 @@ void register_ResponsePkg_type_identifier(
         "YomkRpc::ResponsePkg", type_ids_ResponsePkg);
     if (eprosima::fastdds::dds::RETCODE_OK != return_code_ResponsePkg)
     {
-        StructTypeFlag struct_flags_ResponsePkg = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::APPENDABLE,
+        StructTypeFlag struct_flags_ResponsePkg = TypeObjectUtils::build_struct_type_flag(eprosima::fastdds::dds::xtypes::ExtensibilityKind::FINAL,
                 false, false);
         QualifiedTypeName type_name_ResponsePkg = "YomkRpc::ResponsePkg";
         eprosima::fastcdr::optional<AppliedBuiltinTypeAnnotations> type_ann_builtin_ResponsePkg;

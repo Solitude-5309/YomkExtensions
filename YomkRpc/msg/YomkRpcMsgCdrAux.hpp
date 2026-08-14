@@ -24,145 +24,145 @@
 
 #include "YomkRpcMsg.hpp"
 
-constexpr uint32_t YomkRpc_MUCharArray_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MUCharArray_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MUCharArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt32_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MUInt32_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MUInt32_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt8MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MUInt8MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MUInt8MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MFloat64_max_cdr_typesize {16UL};
+constexpr uint32_t YomkRpc_MFloat64_max_cdr_typesize {8UL};
 constexpr uint32_t YomkRpc_MFloat64_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt16_max_cdr_typesize {6UL};
+constexpr uint32_t YomkRpc_MUInt16_max_cdr_typesize {2UL};
 constexpr uint32_t YomkRpc_MUInt16_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MString_max_cdr_typesize {264UL};
+constexpr uint32_t YomkRpc_MString_max_cdr_typesize {260UL};
 constexpr uint32_t YomkRpc_MString_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MByte_max_cdr_typesize {5UL};
+constexpr uint32_t YomkRpc_MByte_max_cdr_typesize {1UL};
 constexpr uint32_t YomkRpc_MByte_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUCharMultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MUCharMultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MUCharMultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt16MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MInt16MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MInt16MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MFloat64Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MFloat64Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MFloat64Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt8Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MInt8Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MInt8Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MFloat32MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MFloat32MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MFloat32MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt64Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MUInt64Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MUInt64Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt32_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MInt32_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MInt32_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MFloat64MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MFloat64MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MFloat64MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MColorRGBA_max_cdr_typesize {20UL};
+constexpr uint32_t YomkRpc_MColorRGBA_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MColorRGBA_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_RequestPkg_max_cdr_typesize {532UL};
+constexpr uint32_t YomkRpc_RequestPkg_max_cdr_typesize {528UL};
 constexpr uint32_t YomkRpc_RequestPkg_max_key_cdr_typesize {260UL};
 
-constexpr uint32_t YomkRpc_MInt32Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MInt32Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MInt32Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MDuration_max_cdr_typesize {12UL};
+constexpr uint32_t YomkRpc_MDuration_max_cdr_typesize {8UL};
 constexpr uint32_t YomkRpc_MDuration_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt16_max_cdr_typesize {6UL};
+constexpr uint32_t YomkRpc_MInt16_max_cdr_typesize {2UL};
 constexpr uint32_t YomkRpc_MInt16_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt16Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MInt16Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MInt16Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt8_max_cdr_typesize {5UL};
+constexpr uint32_t YomkRpc_MUInt8_max_cdr_typesize {1UL};
 constexpr uint32_t YomkRpc_MUInt8_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MChar_max_cdr_typesize {5UL};
+constexpr uint32_t YomkRpc_MChar_max_cdr_typesize {1UL};
 constexpr uint32_t YomkRpc_MChar_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MByteMultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MByteMultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MByteMultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt8Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MUInt8Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MUInt8Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MTime_max_cdr_typesize {12UL};
+constexpr uint32_t YomkRpc_MTime_max_cdr_typesize {8UL};
 constexpr uint32_t YomkRpc_MTime_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MFloat32Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MFloat32Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MFloat32Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt64_max_cdr_typesize {16UL};
+constexpr uint32_t YomkRpc_MUInt64_max_cdr_typesize {8UL};
 constexpr uint32_t YomkRpc_MUInt64_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt64Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MInt64Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MInt64Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MByteArray_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MByteArray_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MByteArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MFloat32_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MFloat32_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MFloat32_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MBool_max_cdr_typesize {5UL};
+constexpr uint32_t YomkRpc_MBool_max_cdr_typesize {1UL};
 constexpr uint32_t YomkRpc_MBool_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt64MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MUInt64MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MUInt64MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt32MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MUInt32MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MUInt32MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MHeader_max_cdr_typesize {276UL};
+constexpr uint32_t YomkRpc_MHeader_max_cdr_typesize {268UL};
 constexpr uint32_t YomkRpc_MHeader_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_ResponsePkg_max_cdr_typesize {796UL};
+constexpr uint32_t YomkRpc_ResponsePkg_max_cdr_typesize {792UL};
 constexpr uint32_t YomkRpc_ResponsePkg_max_key_cdr_typesize {260UL};
 
-constexpr uint32_t YomkRpc_MInt64_max_cdr_typesize {16UL};
+constexpr uint32_t YomkRpc_MInt64_max_cdr_typesize {8UL};
 constexpr uint32_t YomkRpc_MInt64_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MultiArrayLayout_max_cdr_typesize {16UL};
+constexpr uint32_t YomkRpc_MultiArrayLayout_max_cdr_typesize {12UL};
 constexpr uint32_t YomkRpc_MultiArrayLayout_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt8MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MInt8MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MInt8MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt16MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MUInt16MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MUInt16MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt32MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MInt32MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MInt32MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt64MultiArray_max_cdr_typesize {24UL};
+constexpr uint32_t YomkRpc_MInt64MultiArray_max_cdr_typesize {16UL};
 constexpr uint32_t YomkRpc_MInt64MultiArray_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MultiArrayDimension_max_cdr_typesize {272UL};
+constexpr uint32_t YomkRpc_MultiArrayDimension_max_cdr_typesize {268UL};
 constexpr uint32_t YomkRpc_MultiArrayDimension_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MInt8_max_cdr_typesize {5UL};
+constexpr uint32_t YomkRpc_MInt8_max_cdr_typesize {1UL};
 constexpr uint32_t YomkRpc_MInt8_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUChar_max_cdr_typesize {5UL};
+constexpr uint32_t YomkRpc_MUChar_max_cdr_typesize {1UL};
 constexpr uint32_t YomkRpc_MUChar_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt32Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MUInt32Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MUInt32Array_max_key_cdr_typesize {0UL};
 
-constexpr uint32_t YomkRpc_MUInt16Array_max_cdr_typesize {8UL};
+constexpr uint32_t YomkRpc_MUInt16Array_max_cdr_typesize {4UL};
 constexpr uint32_t YomkRpc_MUInt16Array_max_key_cdr_typesize {0UL};
 
 

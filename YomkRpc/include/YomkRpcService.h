@@ -23,6 +23,8 @@ private:
     YomkResponse registerPubTopic(YomkPkgPtr pkg);
     YomkResponse registerSubTopic(YomkPkgPtr pkg);
     YomkResponse publish(YomkPkgPtr pkg);
+    YomkResponse loan(YomkPkgPtr pkg);
+    YomkResponse discardLoan(YomkPkgPtr pkg);
 
 private:
     std::map<std::string, std::unique_ptr<FastDDSNode>> nodes_;
@@ -59,8 +61,22 @@ struct DDSPublish
     void *data;
 };
 
+struct DDSLoan
+{
+    std::string nodeName;
+    std::string topicName;
+    void *sample; // loan 请求忽略；discard 请求携带待归还的借出指针
+};
+
+struct DDSLoanResult
+{
+    void *sample;
+};
+
 // clang-format off
 YomkMsg(DDSNode, DDSNode, msg)
 YomkMsg(DDSTopic, DDSTopic, msg)
 YomkMsg(DDSSubRequest, DDSSubRequest, msg)
 YomkMsg(DDSPublish, DDSPublish, msg)
+YomkMsg(DDSLoan, DDSLoan, msg)
+YomkMsg(DDSLoanResult, DDSLoanResult, msg)

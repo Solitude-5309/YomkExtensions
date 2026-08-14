@@ -1,5 +1,6 @@
 #include "FastDDSNode.h"
 
+#include <fastdds/dds/core/LoanableSequence.hpp>
 #include <fastdds/dds/core/status/StatusMask.hpp>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
@@ -17,6 +18,46 @@ public:
 
     void on_data_available(DataReader *reader) override
     {
+        // 优先走 reader loan 路径（零拷贝）：任意类型均可用，回调指针仅回调期间有效
+        if (loanSupported_)
+        {
+            while (true)
+            {
+                LoanableSequence<void *> dataSeq; // max_len=0 → 借出
+                SampleInfoSeq infoSeq;
+                ReturnCode_t ret = reader->take(dataSeq, infoSeq, LENGTH_UNLIMITED);
+                if (ret == RETCODE_OK)
+                {
+                    for (LoanableCollection::size_type i = 0; i < infoSeq.length(); ++i)
+                    {
+                        if (infoSeq[i].valid_data &&
+                            infoSeq[i].instance_state == ALIVE_INSTANCE_STATE && callback_)
+                        {
+                            callback_(dataSeq.buffer()[i]);
+                        }
+                    }
+                    reader->return_loan(dataSeq, infoSeq);
+                    continue;
+                }
+                if (ret != RETCODE_NO_DATA)
+                {
+                    // loan 路径不可用（如类型不支持），置标志永久回退传统路径
+                    loanSupported_ = false;
+                    legacyTake(reader);
+                }
+                break;
+            }
+        }
+        else
+        {
+            legacyTake(reader);
+        }
+    }
+
+private:
+    // 传统路径：反序列化进内部缓冲后回调
+    void legacyTake(DataReader *reader)
+    {
         SampleInfo info;
         while (RETCODE_OK == reader->take_next_sample(data_, &info))
         {
@@ -30,6 +71,7 @@ public:
 private:
     void *data_;
     DataCallback callback_;
+    bool loanSupported_ = true;
 };
 
 FastDDSNode::FastDDSNode() = default;
@@ -220,4 +262,27 @@ bool FastDDSNode::publish(const std::string &topicName, const void *data)
         return false;
     }
     return it->second.writer->write(const_cast<void *>(data)) == RETCODE_OK;
+}
+
+bool FastDDSNode::loan(const std::string &topicName, void *&sample)
+{
+    std::lock_guard<std::mutex> lock(mtx_);
+    sample = nullptr;
+    auto it = pubTopics_.find(topicName);
+    if (it == pubTopics_.end() || it->second.writer == nullptr)
+    {
+        return false;
+    }
+    return it->second.writer->loan_sample(sample) == RETCODE_OK;
+}
+
+bool FastDDSNode::discardLoan(const std::string &topicName, void *&sample)
+{
+    std::lock_guard<std::mutex> lock(mtx_);
+    auto it = pubTopics_.find(topicName);
+    if (it == pubTopics_.end() || it->second.writer == nullptr || sample == nullptr)
+    {
+        return false;
+    }
+    return it->second.writer->discard_loan(sample) == RETCODE_OK;
 }

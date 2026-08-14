@@ -48,6 +48,11 @@ public:
     bool registerPubTopic(const std::string &topicName,
                           void *type);
     bool publish(const std::string &topicName, const void *data);
+    // 借出 writer 池内样本（仅 plain 类型支持）：填值后 publish 免序列化；
+    // 失败（非 plain/池耗尽）返回 false 且 sample=nullptr，回退普通发布路径
+    bool loan(const std::string &topicName, void *&sample);
+    // 放弃未发布的借出样本
+    bool discardLoan(const std::string &topicName, void *&sample);
 
 private:
     eprosima::fastdds::dds::Topic *getOrCreateTopic(const std::string &topicName,

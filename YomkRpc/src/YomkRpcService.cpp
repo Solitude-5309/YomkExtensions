@@ -17,6 +17,8 @@ int YomkRpcService::init()
     YomkInstallFunc("/register_pub_topic", YomkRpcService::registerPubTopic);
     YomkInstallFunc("/register_sub_topic", YomkRpcService::registerSubTopic);
     YomkInstallFunc("/publish", YomkRpcService::publish);
+    YomkInstallFunc("/loan", YomkRpcService::loan);
+    YomkInstallFunc("/discard_loan", YomkRpcService::discardLoan);
     return 0;
 }
 
@@ -119,6 +121,47 @@ YomkResponse YomkRpcService::publish(YomkPkgPtr pkg)
         YOMK_ERROR_TAG("YomkRpcService::publish", "publish [", p->msg.topicName, "] failed on node [", p->msg.nodeName, "]");
         return YomkResponse(YomkResponse::eNo,
                             "publish [" + p->msg.topicName + "] failed on node [" + p->msg.nodeName + "]");
+    }
+    return YomkResponse(YomkResponse::eOk, "ok");
+}
+
+YomkResponse YomkRpcService::loan(YomkPkgPtr pkg)
+{
+    YomkUnPackPkgResponse(pkg, DDSLoan, p);
+
+    std::lock_guard<std::mutex> lock(mtx_);
+    auto it = nodes_.find(p->msg.nodeName);
+    if (it == nodes_.end())
+    {
+        YOMK_ERROR_TAG("YomkRpcService::loan", "node [", p->msg.nodeName, "] not exists");
+        return YomkResponse(YomkResponse::eNo, "node [" + p->msg.nodeName + "] not exists");
+    }
+    void *sample = nullptr;
+    if (!it->second->loan(p->msg.topicName, sample) || sample == nullptr)
+    {
+        YOMK_ERROR_TAG("YomkRpcService::loan", "loan [", p->msg.topicName, "] failed on node [", p->msg.nodeName, "] (非 plain 类型或池耗尽，回退普通发布)");
+        return YomkResponse(YomkResponse::eNo,
+                            "loan [" + p->msg.topicName + "] failed on node [" + p->msg.nodeName + "]");
+    }
+    return YomkResponse(YomkResponse::eOk, "ok", YomkMkPtr(DDSLoanResult, DDSLoanResult{sample}));
+}
+
+YomkResponse YomkRpcService::discardLoan(YomkPkgPtr pkg)
+{
+    YomkUnPackPkgResponse(pkg, DDSLoan, p);
+
+    std::lock_guard<std::mutex> lock(mtx_);
+    auto it = nodes_.find(p->msg.nodeName);
+    if (it == nodes_.end())
+    {
+        YOMK_ERROR_TAG("YomkRpcService::discardLoan", "node [", p->msg.nodeName, "] not exists");
+        return YomkResponse(YomkResponse::eNo, "node [" + p->msg.nodeName + "] not exists");
+    }
+    if (!it->second->discardLoan(p->msg.topicName, p->msg.sample))
+    {
+        YOMK_ERROR_TAG("YomkRpcService::discardLoan", "discardLoan [", p->msg.topicName, "] failed on node [", p->msg.nodeName, "]");
+        return YomkResponse(YomkResponse::eNo,
+                            "discardLoan [" + p->msg.topicName + "] failed on node [" + p->msg.nodeName + "]");
     }
     return YomkResponse(YomkResponse::eOk, "ok");
 }

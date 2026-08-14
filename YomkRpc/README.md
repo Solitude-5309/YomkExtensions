@@ -14,6 +14,8 @@
 | `/YomkRpcService/register_pub_topic` | 注册发布主题 | 传入 `DDSTopic{nodeName, topicName, type}`，type 为 PubSubType 实例指针 |
 | `/YomkRpcService/register_sub_topic` | 注册订阅主题 | 传入 `DDSSubRequest{nodeName, topicName, type, callback}`，data 由内部自动创建 |
 | `/YomkRpcService/publish` | 发布数据 | 传入 `DDSPublish{nodeName, topicName, data}`，data 为数据实例指针 |
+| `/YomkRpcService/loan` | 借出发送缓冲 | 传入 `DDSLoan{nodeName, topicName}`，成功返回 `DDSLoanResult{sample}` 池内指针，仅 plain 类型支持 |
+| `/YomkRpcService/discard_loan` | 归还未发布的借出缓冲 | 传入 `DDSLoan{nodeName, topicName, sample}` |
 
 ## 前置条件
 
@@ -31,7 +33,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本编译安装主库后自动编译并运行 `TestRpcService`，并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本编译安装主库后自动编译并依次运行 `TestRpcService`（服务接口端到端测试）与 `TestRpcLoan`（loan 借出机制专项测试），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
@@ -47,8 +49,9 @@ YomkRpc/
 │   ├── YomkRpcMsg.idl      # IDL 消息定义（如 MString）
 │   └── ...                 # fastddsgen 生成代码
 ├── test/
-│   ├── CMakeLists.txt      # 测试程序构建
-│   └── TestRpcService.cpp  # 服务接口端到端测试
+│   ├── CMakeLists.txt       # 测试程序构建
+│   ├── TestRpcService.cpp   # 服务接口端到端测试
+│   └── TestRpcLoan.cpp      # loan 借出机制专项测试
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板
 ├── CMakeLists.txt            # CMake 构建配置
@@ -88,9 +91,33 @@ YomkRpc::MString msg;
 msg.data("hello");
 YOMKRPC_PUB_MSG("node0", "my_topic", &msg);
 
+// 借出发布（仅 plain 类型：纯基础类型成员 + FINAL 可扩展性，免序列化）
+YOMKRPC_PUB_TOPIC("node0", "int_topic", new YomkRpc::MInt32PubSubType());
+void *sample = nullptr;
+YOMKRPC_LOAN("node0", "int_topic", sample);
+if (sample != nullptr)
+{
+    static_cast<YomkRpc::MInt32 *>(sample)->data(42);
+    YOMKRPC_PUB_MSG("node0", "int_topic", sample); // write 后中间件收回指针
+}
+else
+{
+    // 非 plain 类型或池耗尽：回退普通发布路径
+}
+
+// 放弃未发布的借出缓冲
+YOMKRPC_DISCARD_LOAN("node0", "int_topic", sample);
+
 // 退出前删除节点
 YOMKRPC_DEL_NODE("node0");
 ```
+
+### Loan（借出）机制说明
+
+- **订阅端完全透明**：`FastDDSNode` 内部自动使用 reader loan 接收（回调接口与指针语义不变，仅回调期间有效），零序列化拷贝，配合 data-sharing 跨进程零拷贝读取
+- **发布端显式 API**：`YOMKRPC_LOAN` 借出 writer 池内样本，直接在池内填值后 `YOMKRPC_PUB_MSG` 发布免序列化；每次 write 后指针即被中间件收回，须重新借出
+- **适用条件**：仅 plain 类型可借出（纯基础类型成员 + FINAL 可扩展性，如 MInt32、MColorRGBA）；含 string/sequence 的类型 loan 失败返回 nullptr，自动回退普通发布
+- **指针生命周期**：发布端 loaned 指针 write/discard 后不可再访问；订阅端指针仅回调期间有效
 
 ## 开发状态
 
@@ -98,6 +125,7 @@ YOMKRPC_DEL_NODE("node0");
 - ✅ CMake 构建系统集成
 - ✅ FastDDS 集成（FastDDSNode 发布订阅）
 - ✅ YomkRpcService DDS 接口（节点管理/主题注册/发布）
+- ✅ Loan 借出机制（订阅端透明自动切换，发布端 loan/discard 接口）
 - 🚧 跨进程/跨机通信验证
 - 🚧 更多数据类型支持
 

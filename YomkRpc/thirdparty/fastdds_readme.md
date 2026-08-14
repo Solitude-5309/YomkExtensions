@@ -34,6 +34,7 @@ struct RPCString
 
 3. 创建一个gen目录用于存放生成文件
 4. 生成C++代码：./fastddsgen -d gen rpc.idl 或 生成python代码：./fastddsgen -python -d gen rpc.idl
+5. 生成支持loan的msg：./fastddsgen -python -d gen -de final rpc.idl 
 
 ### 编译python idl
 
