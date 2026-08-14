@@ -18,14 +18,8 @@ message(STATUS "YomkROS2 libraries: ${YomkROS2_LIBRARIES}")
 include_directories(${YomkServer_INCLUDE_DIRS})
 link_directories(${YomkServer_LIB_DIR})
 
-add_executable(TestYomkROS2NonBlocking TestYomkROS2NonBlocking.cpp)
-target_link_libraries(TestYomkROS2NonBlocking PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)
-
-add_executable(TestYomkROS2Blocking TestYomkROS2Blocking.cpp)
-target_link_libraries(TestYomkROS2Blocking PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)
-
-add_executable(TestYomkROS2API TestYomkROS2API.cpp)
-target_link_libraries(TestYomkROS2API PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)
+add_executable(TestYomkROS2Topic TestYomkROS2Topic.cpp)
+target_link_libraries(TestYomkROS2Topic PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)
 
 add_executable(TestYomkROS2Param TestYomkROS2Param.cpp)
 target_link_libraries(TestYomkROS2Param PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)

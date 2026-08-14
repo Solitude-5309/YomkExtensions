@@ -77,7 +77,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本编译安装主库后自动编译并依次运行 `TestYomkROS2NonBlocking`（非阻塞）、`TestYomkROS2Blocking`（阻塞）与 `TestYomkROS2API`（宏 API 阻塞模式，脚本以 SIGINT 模拟 Ctrl+C 唤醒）、`TestYomkROS2Param`（参数接口非阻塞用例），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本编译安装主库后自动编译并依次运行 `TestYomkROS2Topic`（主题宏测试，阻塞模式，脚本以 SIGINT 模拟 Ctrl+C 唤醒）与 `TestYomkROS2Param`（参数接口宏测试，非阻塞用例），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
@@ -90,9 +90,7 @@ YomkROS2/
 │   └── ROS2Node.cpp         # ROS2Node 非模板方法实现
 ├── test/
 │   ├── CMakeLists.txt                # 测试程序构建
-│   ├── TestYomkROS2NonBlocking.cpp   # 非阻塞 run(false) 端到端测试
-│   ├── TestYomkROS2Blocking.cpp      # 阻塞 run(true) 端到端测试
-│   ├── TestYomkROS2API.cpp           # 宏 API 阻塞模式测试（永久阻塞，Ctrl+C 退出）
+│   ├── TestYomkROS2Topic.cpp         # 主题宏测试（阻塞模式，Ctrl+C 退出）
 │   └── TestYomkROS2Param.cpp         # 参数接口宏 API 测试（本地 + 远程参数）
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板

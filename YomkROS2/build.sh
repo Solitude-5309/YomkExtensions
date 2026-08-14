@@ -107,37 +107,23 @@ if [ "${BUILD_TEST}" = "ON" ]; then
 
     # 运行测试
     echo ""
-    echo "========== 运行非阻塞测试 =========="
-    "TestYomkROS2NonBlocking"
-    TEST_NONBLOCKING_RESULT=$?
-    echo ""
-    echo "========== 运行阻塞测试 =========="
-    # 阻塞测试 run(true) 永久阻塞主线程（shutdown 由信号触发），
-    # 后台运行并延时发送 SIGINT 模拟用户 Ctrl+C，验证阻塞 run 正常返回并清理
-    "TestYomkROS2Blocking" &
-    TEST_BLOCKING_PID=$!
-    sleep 3
-    kill -INT ${TEST_BLOCKING_PID} 2>/dev/null
-    wait ${TEST_BLOCKING_PID}
-    TEST_BLOCKING_RESULT=$?
-    echo ""
-    echo "========== 运行 API 宏测试（阻塞模式）=========="
-    # API 测试遵循原生 ROS2 节点语义：run(true) 永久阻塞主线程，
+    echo "========== 运行主题宏测试（阻塞模式）=========="
+    # 主题测试遵循原生 ROS2 节点语义：run(true) 永久阻塞主线程，
     # 此处后台运行并延时发送 SIGINT 模拟用户 Ctrl+C，验证阻塞 run 正常返回并清理
-    "TestYomkROS2API" &
-    TEST_API_PID=$!
+    "TestYomkROS2Topic" &
+    TEST_TOPIC_PID=$!
     sleep 3
-    kill -INT ${TEST_API_PID} 2>/dev/null
-    wait ${TEST_API_PID}
-    TEST_API_RESULT=$?
+    kill -INT ${TEST_TOPIC_PID} 2>/dev/null
+    wait ${TEST_TOPIC_PID}
+    TEST_TOPIC_RESULT=$?
     echo ""
     echo "========== 运行参数接口测试（非阻塞模式）=========="
     # 参数测试为前台运行的非阻塞用例：宏单例与远程节点均 run(false) 后台 spin
     # （异步客户端 future 的响应依赖本地 spin），全部用例执行完毕后自行退出
     "TestYomkROS2Param"
     TEST_PARAM_RESULT=$?
-    if [ ${TEST_NONBLOCKING_RESULT} -ne 0 ] || [ ${TEST_BLOCKING_RESULT} -ne 0 ] || [ ${TEST_API_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ]; then
-        echo "存在测试失败：NonBlocking=${TEST_NONBLOCKING_RESULT} Blocking=${TEST_BLOCKING_RESULT} API=${TEST_API_RESULT} Param=${TEST_PARAM_RESULT}"
+    if [ ${TEST_TOPIC_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ]; then
+        echo "存在测试失败：Topic=${TEST_TOPIC_RESULT} Param=${TEST_PARAM_RESULT}"
     fi
 fi
 
