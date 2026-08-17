@@ -72,3 +72,8 @@ Thumbs.db
 # --------
 *.dll
 *.exe
+
+# ros2
+build/
+install/
+log/
