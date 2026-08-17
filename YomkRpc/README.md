@@ -34,7 +34,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本按三步流程执行：先编译安装主库（YomkRpc），再编译安装 msg 类型库（YomkRpcMsg，固定安装至 ~/YomkServer/install），最后编译并依次运行 `TestRpcService`（服务接口端到端测试）与 `TestRpcLoan`（loan 借出机制专项测试），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本按三步流程执行：先编译安装主库（YomkRpc），再编译安装 msg 类型库（YomkRpcMsg，固定安装至 ~/YomkServer/install），最后编译并依次运行 `TestRpcTopic`（服务接口端到端测试）与 `TestRpcTopicLoan`（loan 借出机制专项测试），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
@@ -51,8 +51,8 @@ YomkRpc/
 │   └── ...                 # fastddsgen 生成代码（独立类型库，含 SWIG Python 绑定）
 ├── test/
 │   ├── CMakeLists.txt       # 测试程序构建
-│   ├── TestRpcService.cpp   # 服务接口端到端测试
-│   └── TestRpcLoan.cpp      # loan 借出机制专项测试
+│   ├── TestRpcTopic.cpp   # 服务接口端到端测试
+│   └── TestRpcTopicLoan.cpp      # loan 借出机制专项测试
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板
 ├── CMakeLists.txt            # CMake 构建配置

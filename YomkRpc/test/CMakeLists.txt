@@ -17,8 +17,8 @@ message(STATUS "YomkRpc libraries: ${YomkRpc_LIBRARIES}")
 include_directories(${YomkServer_INCLUDE_DIRS})
 link_directories(${YomkServer_LIB_DIR})
 
-add_executable(TestRpcService TestRpcService.cpp)
-target_link_libraries(TestRpcService PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
+add_executable(TestRpcTopic TestRpcTopic.cpp)
+target_link_libraries(TestRpcTopic PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
 
-add_executable(TestRpcLoan TestRpcLoan.cpp)
-target_link_libraries(TestRpcLoan PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
+add_executable(TestRpcTopicLoan TestRpcTopicLoan.cpp)
+target_link_libraries(TestRpcTopicLoan PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
