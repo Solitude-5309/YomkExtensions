@@ -127,6 +127,11 @@ namespace yomk
             pubTypes_.clear();
             paramClients_.clear();
             paramCallbacks_.clear();
+            serviceServers_.clear(); // 先销毁服务端，再销毁客户端（与订阅/发布同序）
+            serviceGroups_.clear();
+            serviceClients_.clear();
+            serviceClientTypes_.clear();
+            serviceClientGroups_.clear();
         }
 
         // 仅销毁本实例创建的进程级 ROS2 上下文，不干扰用户自行初始化的环境

@@ -94,6 +94,36 @@ namespace yomk
         bool hasRemoteParam(const std::string &remoteNodeName, const std::string &name);
         std::vector<std::string> listRemoteParams(const std::string &remoteNodeName);
 
+        // ===== 服务通信接口（一次调用完成；失败时输出 RCLCPP_ERROR 日志，成功无输出）=====
+
+        // 注册服务端：服务名、回调；服务重名返回 false
+        // 【回调规则】与订阅回调同规则（见 registerSubTopic 注释）：每个服务端分配独立
+        // MutuallyExclusive 回调组——同服务请求串行保序，跨服务/跨 topic 可并发；
+        // 回调内阻塞只影响本服务的后续请求，不会阻塞其他服务或 topic 回调
+        // （受 MultiThreadedExecutor 线程数限制，全部线程被占用时仍会排队）；
+        // 回调须自行保证共享数据的线程安全
+        template <typename ServiceT, typename CallbackT>
+        bool createService(const std::string &serviceName, CallbackT &&callback);
+        // 预创建服务客户端：只创建并缓存客户端实体，不检查服务可用性、不发送请求；
+        // 类型不匹配或未初始化返回 false
+        // 【推荐用法】在 run 之前预创建客户端（创建节点 → 创建客户端 → run →
+        // callService/callServiceAsync 发送请求），确保客户端实体在 spin 启动前
+        // 就绪（跨节点调用必须如此；spin 期间动态创建的客户端可能收不到响应）
+        template <typename ServiceT>
+        bool createServiceClient(const std::string &serviceName);
+        // 同步调用服务：自动创建客户端 + 等待服务 + 发送请求 + future 同步等待响应（一次调用完成）；
+        // 响应由本节点自身的 spin 处理，故调用前需已 run 运行（与远程参数同模式，
+        // 不建内部节点、不二次 spin）；失败返回 nullptr
+        template <typename ServiceT, typename RequestT>
+        typename ServiceT::Response::SharedPtr callService(const std::string &serviceName, const RequestT &request);
+        // 异步调用服务：发送请求后立即返回，响应就绪时在独立 MutuallyExclusive 回调组中
+        // 调用 callback(Response::SharedPtr)；发送失败（未初始化/服务不可用）返回 false
+        // （此时回调不会被调用）
+        // 【回调规则】与订阅回调同规则：客户端异步回调在独立回调组执行，回调内阻塞不会
+        // 影响 topic 回调与其他服务回调；回调须自行保证共享数据的线程安全
+        template <typename ServiceT, typename RequestT, typename CallbackT>
+        bool callServiceAsync(const std::string &serviceName, const RequestT &request, CallbackT &&callback);
+
     private:
         std::shared_ptr<rclcpp::Node> node_;
         std::shared_ptr<rclcpp::Executor> executor_; // MultiThreadedExecutor
@@ -105,6 +135,11 @@ namespace yomk
         std::map<std::string, std::type_index> subTypes_;
         std::map<std::string, std::shared_ptr<rclcpp::AsyncParametersClient>> paramClients_; // 远程参数客户端（懒创建）
         std::map<uint64_t, std::shared_ptr<rclcpp::node_interfaces::OnSetParametersCallbackHandle>> paramCallbacks_;
+        std::map<std::string, std::shared_ptr<rclcpp::ServiceBase>> serviceServers_;        // 已注册服务端
+        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> serviceGroups_;       // 持有各服务端的独立回调组（节点仅存弱引用）
+        std::map<std::string, std::shared_ptr<rclcpp::ClientBase>> serviceClients_;         // 服务客户端（懒创建）
+        std::map<std::string, std::type_index> serviceClientTypes_;                         // 客户端服务类型（校验）
+        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> serviceClientGroups_; // 持有各客户端的独立回调组
         uint64_t paramCallbackNextId_ = 1;
         mutable std::mutex mtx_;
         std::condition_variable spinExitedCv_; // spin 退出（后台线程或阻塞线程）后通知 shutdown
@@ -114,6 +149,13 @@ namespace yomk
 
         // 懒创建远程参数客户端（不加锁，调用方持锁）；失败返回 nullptr（已输出日志）
         std::shared_ptr<rclcpp::AsyncParametersClient> getOrCreateParamClient(const std::string &remoteNodeName);
+        // 创建并缓存服务客户端（不加锁，调用方持锁）；不检查服务可用性，类型不匹配或创建失败返回 nullptr（已输出日志）
+        template <typename ServiceT>
+        std::shared_ptr<rclcpp::Client<ServiceT>> createServiceClientImpl(const std::string &serviceName);
+        // 懒创建服务客户端（不加锁，调用方持锁）：先复用已缓存客户端，否则现场创建并缓存；
+        // 类型不匹配或创建失败返回 nullptr（已输出日志）
+        template <typename ServiceT>
+        std::shared_ptr<rclcpp::Client<ServiceT>> getOrCreateServiceClient(const std::string &serviceName);
     };
 
     // ---- 模板方法实现（内联于头文件，实例化发生在调用者编译单元） ----
@@ -334,6 +376,150 @@ namespace yomk
                          results.empty() ? "empty response" : results[0].reason.c_str());
             return false;
         }
+        return true;
+    }
+
+    // ---- 服务通信接口模板方法实现 ----
+
+    template <typename ServiceT, typename CallbackT>
+    bool ROS2Node::createService(const std::string &serviceName, CallbackT &&callback)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createService [%s] failed: node not initialized", serviceName.c_str());
+            return false;
+        }
+        if (serviceServers_.find(serviceName) != serviceServers_.end())
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createService [%s] failed: service already registered", serviceName.c_str());
+            return false;
+        }
+        // 每服务端独立 MutuallyExclusive group：同服务请求串行保序，跨服务/跨 topic 可并发
+        auto group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        auto server = node_->create_service<ServiceT>(serviceName, std::forward<CallbackT>(callback),
+                                                      rmw_qos_profile_services_default, group);
+        if (!server)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createService [%s] failed: create_service returned null", serviceName.c_str());
+            return false;
+        }
+        serviceServers_[serviceName] = server;
+        serviceGroups_[serviceName] = group; // 节点内部仅持 group 弱引用，须在此持有 shared_ptr
+        return true;
+    }
+
+    template <typename ServiceT>
+    std::shared_ptr<rclcpp::Client<ServiceT>> ROS2Node::createServiceClientImpl(const std::string &serviceName)
+    {
+        // 客户端响应回调在独立 MutuallyExclusive 组执行，不与 topic 回调、其他服务回调互相阻塞
+        auto group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        auto client = node_->create_client<ServiceT>(serviceName, rmw_qos_profile_services_default, group);
+        if (!client)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "service client [%s] failed: create_client returned null", serviceName.c_str());
+            return nullptr;
+        }
+        // 创建后立即缓存（不检查服务可用性）：供 run 前预创建，spin 启动时实体已就绪
+        serviceClients_[serviceName] = client;
+        serviceClientTypes_.insert_or_assign(serviceName, std::type_index(typeid(ServiceT)));
+        serviceClientGroups_[serviceName] = group; // 节点内部仅持 group 弱引用，须在此持有 shared_ptr
+        return client;
+    }
+
+    template <typename ServiceT>
+    std::shared_ptr<rclcpp::Client<ServiceT>> ROS2Node::getOrCreateServiceClient(const std::string &serviceName)
+    {
+        auto it = serviceClients_.find(serviceName);
+        if (it != serviceClients_.end())
+        {
+            auto typeIt = serviceClientTypes_.find(serviceName);
+            if (typeIt == serviceClientTypes_.end() || typeIt->second != std::type_index(typeid(ServiceT)))
+            {
+                RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "service client [%s] failed: service type mismatch", serviceName.c_str());
+                return nullptr;
+            }
+            return std::static_pointer_cast<rclcpp::Client<ServiceT>>(it->second);
+        }
+        return createServiceClientImpl<ServiceT>(serviceName);
+    }
+
+    template <typename ServiceT>
+    bool ROS2Node::createServiceClient(const std::string &serviceName)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createServiceClient [%s] failed: node not initialized", serviceName.c_str());
+            return false;
+        }
+        return createServiceClientImpl<ServiceT>(serviceName) != nullptr;
+    }
+
+    template <typename ServiceT, typename RequestT>
+    typename ServiceT::Response::SharedPtr ROS2Node::callService(const std::string &serviceName, const RequestT &request)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callService [%s] failed: node not initialized", serviceName.c_str());
+            return nullptr;
+        }
+        auto client = getOrCreateServiceClient<ServiceT>(serviceName);
+        if (!client)
+        {
+            return nullptr;
+        }
+        // 发送前检查服务可用性（客户端已缓存时同样检查，不存在的服务返回 nullptr）
+        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callService [%s] failed: service not available", serviceName.c_str());
+            return nullptr;
+        }
+        // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）
+        auto future = client->async_send_request(std::make_shared<typename ServiceT::Request>(request));
+        if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callService [%s] failed: timeout waiting for response", serviceName.c_str());
+            return nullptr;
+        }
+        return future.get();
+    }
+
+    template <typename ServiceT, typename RequestT, typename CallbackT>
+    bool ROS2Node::callServiceAsync(const std::string &serviceName, const RequestT &request, CallbackT &&callback)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callServiceAsync [%s] failed: node not initialized", serviceName.c_str());
+            return false;
+        }
+        auto client = getOrCreateServiceClient<ServiceT>(serviceName);
+        if (!client)
+        {
+            return false;
+        }
+        // 发送前检查服务可用性（客户端已缓存时同样检查，不存在的服务返回 false）
+        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callServiceAsync [%s] failed: service not available", serviceName.c_str());
+            return false;
+        }
+        // 回调式请求：发送后立即返回，响应就绪时在客户端独立回调组中调用用户回调；
+        // 内部包装 future.get()，用户回调直接收 Response::SharedPtr，无需接触 future
+        client->async_send_request(std::make_shared<typename ServiceT::Request>(request),
+                                   [cb = std::forward<CallbackT>(callback)](typename rclcpp::Client<ServiceT>::SharedFuture future)
+                                   {
+                                       try
+                                       {
+                                           cb(future.get());
+                                       }
+                                       catch (const std::exception &e)
+                                       {
+                                           RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callServiceAsync callback failed: %s", e.what());
+                                       }
+                                   });
         return true;
     }
 

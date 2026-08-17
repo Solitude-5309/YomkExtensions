@@ -123,8 +123,15 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     # （异步客户端 future 的响应依赖本地 spin），全部用例执行完毕后自行退出
     "TestYomkROS2Param"
     TEST_PARAM_RESULT=$?
-    if [ ${TEST_TOPIC_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ]; then
-        echo "存在测试失败：Topic=${TEST_TOPIC_RESULT} Param=${TEST_PARAM_RESULT}"
+    echo ""
+    echo "========== 运行服务通信测试（非阻塞模式）=========="
+    # 服务测试为前台运行的非阻塞用例：宏单例与远程节点均 run(false) 后台 spin
+    # （客户端 future 的响应依赖本地 spin，服务端请求由各自 spin 处理），
+    # 全部用例执行完毕后自行退出
+    "TestYomkROS2Service"
+    TEST_SERVICE_RESULT=$?
+    if [ ${TEST_TOPIC_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ] || [ ${TEST_SERVICE_RESULT} -ne 0 ]; then
+        echo "存在测试失败：Topic=${TEST_TOPIC_RESULT} Param=${TEST_PARAM_RESULT} Service=${TEST_SERVICE_RESULT}"
     fi
 fi
 

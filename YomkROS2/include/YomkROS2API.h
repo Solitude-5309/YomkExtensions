@@ -72,3 +72,26 @@ namespace yomk
 
 #define YOMKROS2_LIST_REMOTE_PARAMS(remoteNode) \
     yomk::yomkROS2Node().listRemoteParams(remoteNode)
+
+// ===== 服务通信接口（失败时接口内部输出 RCLCPP_ERROR 日志，成功无输出）=====
+// callback 体内若含顶层逗号（如模板参数），请先将回调定义为变量再传入
+
+// 注册服务端：type 为 rosidl 服务类型（如 example_interfaces::srv::AddTwoInts）
+#define YOMKROS2_SERVICE(type, serviceName, callback) \
+    yomk::yomkROS2Node().createService<type>(serviceName, callback)
+
+// 预创建服务客户端：只创建并缓存客户端实体，不检查服务可用性、不发送请求；
+// 【推荐用法】在 YOMKROS2_RUN 之前预创建（创建节点 → 创建客户端 → run →
+// CALL_SERVICE/CALL_SERVICE_ASYNC 发送请求），跨节点调用必须如此
+#define YOMKROS2_CLIENT(type, serviceName) \
+    yomk::yomkROS2Node().createServiceClient<type>(serviceName)
+
+// 同步调用服务：返回响应 SharedPtr，失败返回 nullptr（自动建客户端，一次调用完成）；
+// request 若含顶层逗号（如聚合初始化 {1, 2}），先定义为变量再传入
+#define YOMKROS2_CALL_SERVICE(type, serviceName, request) \
+    yomk::yomkROS2Node().callService<type>(serviceName, request)
+
+// 异步调用服务：立即返回，响应就绪时回调收到 Response::SharedPtr；
+// callback 先定义为变量后传入
+#define YOMKROS2_CALL_SERVICE_ASYNC(type, serviceName, request, callback) \
+    yomk::yomkROS2Node().callServiceAsync<type>(serviceName, request, callback)

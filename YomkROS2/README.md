@@ -33,9 +33,17 @@
 | `setRemoteParam<T>(remoteNode, name, value)` | 设置远程参数 | 自动创建异步客户端，future 同步等待响应；需节点已 run 运行 |
 | `hasRemoteParam(remoteNode, name)` | 远程参数是否存在 | 自动创建异步客户端，future 同步等待响应；需节点已 run 运行 |
 | `listRemoteParams(remoteNode)` | 列出远程参数名 | 自动创建异步客户端，future 同步等待响应；需节点已 run 运行 |
+| `createService<T>(service, cb)` | 注册服务端 | 服务名、回调；服务重名返回 false |
+| `createServiceClient<T>(service)` | 预创建服务客户端 | 只创建并缓存客户端实体，不检查服务可用性、不发送请求；推荐在 run 前调用 |
+| `callService<T>(service, request)` | 同步调用服务 | 自动创建客户端 + 等待服务 + 发请求 + future 同步等待响应（一次调用完成）；需节点已 run 运行；失败返回 nullptr |
+| `callServiceAsync<T>(service, request, cb)` | 异步调用服务 | 立即返回，响应就绪时回调收到 `Response::SharedPtr`；发送失败返回 false |
 | `shutdown()` | 显式销毁 | 销毁节点与全部实体，退出前建议调用 |
 
-> 参数接口失败时内部输出 `RCLCPP_ERROR` 日志（含接口名、参数名与失败原因），成功无输出，便于排查错误。
+> 参数与服务接口失败时内部输出 `RCLCPP_ERROR` 日志（含接口名、服务名/参数名与失败原因），成功无输出，便于排查错误。
+>
+> 服务端回调与订阅回调同规则：每个服务端分配独立 MutuallyExclusive 回调组——同服务请求串行保序，跨服务/跨 topic 可并发；回调内阻塞只影响本服务的后续请求，不会阻塞其他服务或 topic 回调（受 executor 线程数限制）。客户端异步回调同样在独立回调组执行。回调须自行保证共享数据的线程安全。
+>
+> ⚠️ **服务客户端推荐在 run 之前预创建**（创建节点 → 创建客户端 → run → 发送请求）：跨节点调用时，spin 期间动态创建的客户端可能收不到响应；run 前预创建的客户端在 spin 启动时实体已就绪，响应接收可靠。
 
 ### 宏 API（YomkROSAPI.h）
 
@@ -58,6 +66,10 @@
 | `YOMKROS2_SET_REMOTE_PARAM(remoteNode, name, value)` | 设置远程参数 | 自动创建异步客户端，future 同步等待；需节点已 run |
 | `YOMKROS2_HAS_REMOTE_PARAM(remoteNode, name)` | 远程参数是否存在 | 自动创建异步客户端，future 同步等待；需节点已 run |
 | `YOMKROS2_LIST_REMOTE_PARAMS(remoteNode)` | 列出远程参数名 | 自动创建异步客户端，future 同步等待；需节点已 run |
+| `YOMKROS2_SERVICE(type, service, cb)` | 注册服务端 | 回调体内若含顶层逗号，请先将回调定义为变量再传入 |
+| `YOMKROS2_CLIENT(type, service)` | 预创建服务客户端 | 只创建并缓存客户端实体，不发送请求；推荐在 YOMKROS2_RUN 之前调用（跨节点必须） |
+| `YOMKROS2_CALL_SERVICE(type, service, request)` | 同步调用服务 | 返回响应 SharedPtr，失败返回 nullptr（自动建客户端，一次调用完成）；需节点已 run |
+| `YOMKROS2_CALL_SERVICE_ASYNC(type, service, request, cb)` | 异步调用服务 | 立即返回，响应就绪时回调收到 Response::SharedPtr |
 | `YOMKROS2_SHUTDOWN()` | 显式销毁 | 退出前建议调用；不调用时析构兜底 |
 
 ## 前置条件
@@ -77,7 +89,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本编译安装主库后自动编译并依次运行 `TestYomkROS2Topic`（主题宏测试，阻塞模式，脚本以 SIGINT 模拟 Ctrl+C 唤醒）与 `TestYomkROS2Param`（参数接口宏测试，非阻塞用例），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本编译安装主库后自动编译并依次运行 `TestYomkROS2Topic`（主题宏测试，阻塞模式，脚本以 SIGINT 模拟 Ctrl+C 唤醒）、`TestYomkROS2Param`（参数接口宏测试，非阻塞用例）与 `TestYomkROS2Service`（服务通信宏测试，非阻塞用例），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
@@ -91,7 +103,8 @@ YomkROS2/
 ├── test/
 │   ├── CMakeLists.txt                # 测试程序构建
 │   ├── TestYomkROS2Topic.cpp         # 主题宏测试（阻塞模式，Ctrl+C 退出）
-│   └── TestYomkROS2Param.cpp         # 参数接口宏 API 测试（本地 + 远程参数）
+│   ├── TestYomkROS2Param.cpp         # 参数接口宏 API 测试（本地 + 远程参数）
+│   └── TestYomkROS2Service.cpp       # 服务通信宏 API 测试（服务端注册 + 同步/异步调用）
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板
 ├── CMakeLists.txt              # CMake 构建配置
@@ -218,12 +231,65 @@ node.listRemoteParams("remote_node");
 
 > 宏用法对应 `YOMKROS2_DECLARE_PARAM` / `YOMKROS2_GET_PARAM` / `YOMKROS2_SET_REMOTE_PARAM` 等（见宏表）。参数接口失败时输出 `RCLCPP_ERROR` 日志，成功无输出。
 
+### 服务通信用法（一次调用完成）
+
+```cpp
+#include <YomkROS2/YomkROS2API.h>
+#include <example_interfaces/srv/add_two_ints.hpp>
+
+int main(int argc, char *argv[])
+{
+    // 1. 创建节点
+    YOMKROS2_NODE(argc, argv, "my_node");
+
+    // 2. 注册服务端（回调内填充 response；服务端回调在独立回调组执行，
+    //    回调内阻塞只影响本服务的后续请求，不阻塞 topic 与其他服务回调）
+    auto addCb = [](const std::shared_ptr<example_interfaces::srv::AddTwoInts::Request> request,
+                    std::shared_ptr<example_interfaces::srv::AddTwoInts::Response> response)
+    {
+        response->sum = request->a + request->b;
+    };
+    YOMKROS2_SERVICE(example_interfaces::srv::AddTwoInts, "add_service", addCb);
+
+    // 3. run 前预创建客户端（只创建实体不发送请求；跨节点调用必须如此，
+    //    spin 期间动态创建的客户端可能收不到响应）
+    YOMKROS2_CLIENT(example_interfaces::srv::AddTwoInts, "add_service");
+
+    // 4. 运行节点（客户端 future 的响应依赖本地 spin，需已 run）
+    YOMKROS2_RUN(false);
+
+    // 5. 同步调用服务：等待服务 + 发请求 + 同步等待响应（复用预创建的客户端）
+    example_interfaces::srv::AddTwoInts::Request req;
+    req.a = 1;
+    req.b = 2;
+    if (auto resp = YOMKROS2_CALL_SERVICE(example_interfaces::srv::AddTwoInts, "add_service", req))
+    {
+        // resp->sum == 3
+    }
+
+    // 6. 异步调用服务：立即返回，响应就绪时回调收到 Response::SharedPtr
+    auto asyncCb = [](example_interfaces::srv::AddTwoInts::Response::SharedPtr resp)
+    {
+        // resp->sum
+    };
+    req.a = 5;
+    req.b = 6;
+    YOMKROS2_CALL_SERVICE_ASYNC(example_interfaces::srv::AddTwoInts, "add_service", req, asyncCb);
+
+    YOMKROS2_SHUTDOWN();
+    return 0;
+}
+```
+
+> 类用法对应 `createService` / `createServiceClient` / `callService` / `callServiceAsync`。服务接口失败时输出 `RCLCPP_ERROR` 日志（含接口名、服务名与失败原因），成功无输出；`callService` 失败返回 nullptr，`callServiceAsync` 发送失败返回 false（此时回调不会被调用）。
+
 ## 开发状态
 
 - [x] 基础框架搭建完成
 - [x] CMake 构建系统集成
 - [x] ROS2 集成（ROS2Node 类：发布/订阅/节点管理）
 - [x] 参数接口（ROS2Node 类：本地参数管理 + 远程参数客户端）
+- [x] 服务通信接口（ROS2Node 类：服务端注册 + 客户端同步/异步调用）
 
 ## License
 

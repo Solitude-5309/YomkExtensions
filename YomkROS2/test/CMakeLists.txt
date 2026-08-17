@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(YomkServer REQUIRED)
 find_package(YomkROS2 REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(example_interfaces REQUIRED)
 message(STATUS "YomkServer version: ${YomkServer_VERSION}")
 message(STATUS "YomkServer include dirs: ${YomkServer_INCLUDE_DIRS}")
 message(STATUS "YomkServer lib dir: ${YomkServer_LIB_DIR}")
@@ -23,3 +25,7 @@ target_link_libraries(TestYomkROS2Topic PRIVATE YomkROS2::YomkROS2 YomkServer::Y
 
 add_executable(TestYomkROS2Param TestYomkROS2Param.cpp)
 target_link_libraries(TestYomkROS2Param PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer std_msgs::std_msgs)
+
+add_executable(TestYomkROS2Service TestYomkROS2Service.cpp)
+target_link_libraries(TestYomkROS2Service PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer
+    std_srvs::std_srvs__rosidl_typesupport_cpp example_interfaces::example_interfaces__rosidl_typesupport_cpp)
