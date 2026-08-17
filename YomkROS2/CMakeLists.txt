@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(YomkROS2 VERSION 0.0.11 LANGUAGES CXX)
+project(YomkROS2 VERSION 0.0.12 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,14 +19,14 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # 安装规则
-set(INCLUDE_INSTALL_DIR "include/${PROJECT_NAME}")
+set(INCLUDE_INSTALL_DIR "include")
 set(LIB_INSTALL_DIR "lib")
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}Targets
     LIBRARY DESTINATION ${LIB_INSTALL_DIR}
 )
-install(DIRECTORY include/ DESTINATION ${INCLUDE_INSTALL_DIR})
+install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
 # CMake export 导出配置
 include(CMakePackageConfigHelpers)

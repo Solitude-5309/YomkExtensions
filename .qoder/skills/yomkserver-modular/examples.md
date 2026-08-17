@@ -1026,14 +1026,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE YomkServer::YomkServer)
 target_compile_definitions(${PROJECT_NAME} PRIVATE EXTENSION_VERSION="${PROJECT_VERSION}")
 
 # 安装规则
-set(INCLUDE_INSTALL_DIR "include/${PROJECT_NAME}")
+set(INCLUDE_INSTALL_DIR "include")
 set(LIB_INSTALL_DIR "lib")
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT ${PROJECT_NAME}Targets
     LIBRARY DESTINATION ${LIB_INSTALL_DIR}
 )
-install(DIRECTORY include/ DESTINATION ${INCLUDE_INSTALL_DIR})
+install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
 # CMake export 导出配置
 include(CMakePackageConfigHelpers)
