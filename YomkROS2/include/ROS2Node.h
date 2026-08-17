@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 
 namespace yomk
 {
@@ -124,6 +125,73 @@ namespace yomk
         template <typename ServiceT, typename RequestT, typename CallbackT>
         bool callServiceAsync(const std::string &serviceName, const RequestT &request, CallbackT &&callback);
 
+        // ===== 动作（Action）通信接口（只封异步；失败时输出 RCLCPP_ERROR 日志，成功无输出）=====
+
+        // 注册动作服务端：三回调一一对应原生 handle_goal/handle_cancel/handle_accepted；
+        // 动作重名返回 false
+        //   goalCallback(goal) 返回 int，原样对应原生 GoalResponse 三值：
+        //     1=拒绝（REJECT）
+        //     2=接受并立即执行（ACCEPT_AND_EXECUTE，随后自动调 executeCallback）
+        //     3=接受但延迟执行（ACCEPT_AND_DEFER，executeCallback 不会被自动调用，
+        //       用户后续自行调用 goalHandle->execute() 触发执行）
+        //   cancelCallback(goalHandle) 返回 true 允许取消 / false 拒绝取消（用户决定，
+        //   危险任务可拒绝；原生 CancelResponse 仅二值，bool 映射无丢失）
+        // 目标接受且立即执行时 executeCallback(goalHandle) 在 executor 线程被调用，
+        // 用户应在其中自行开线程执行长耗时任务（避免阻塞 executor），执行线程中
+        // 使用原生句柄：
+        //   goalHandle->publish_feedback(fb)   发布进度反馈
+        //   goalHandle->is_canceling()         检查取消请求
+        //   goalHandle->succeed(result) / abort(result) / canceled(result)  终结目标
+        // 【回调规则】goal/cancel/accepted 三回调在独立 MutuallyExclusive 回调组执行，
+        // 不阻塞 topic/服务回调；用户执行线程的共享数据线程安全与退出时机由用户保证
+        // （shutdown 前须确保执行线程已退出）
+        template <typename ActionT, typename GoalCallbackT, typename CancelCallbackT, typename ExecuteCallbackT>
+        bool createAction(const std::string &actionName, GoalCallbackT &&goalCallback,
+                          CancelCallbackT &&cancelCallback, ExecuteCallbackT &&executeCallback);
+        // 预创建动作客户端：只创建并缓存客户端实体，不检查服务端可用性、不发送请求；
+        // 类型不匹配或未初始化返回 false
+        // 【推荐用法】在 run 之前预创建（创建节点 → 创建客户端 → run →
+        // callActionAsync 发送目标），与服务客户端同理，避免 spin 期间动态创建实体
+        template <typename ActionT>
+        bool createActionClient(const std::string &actionName);
+        // 异步发送动作目标：立即返回，成功返回非零 goalId（唯一标识本次目标，
+        // 三个回调均携带该 goalId，供 cancelGoal 使用），失败返回 0；响应由本节点
+        // 自身的 spin 处理，故调用前需已 run 运行；支持同一 action 多个 goal 并发
+        // （每 goal 独立回调链）
+        // 【回调不变量】每次调用：goalResponseCallback 必触发且仅触发一次且先于
+        // 其余回调（accepted=true 被接受 / accepted=false 被拒绝）；resultCallback
+        // 必触发且仅触发一次：动作终结（SUCCEEDED/ABORTED/CANCELED）或被拒绝
+        // （code=UNKNOWN 且 result 为空，原生拒绝时 result_callback 不触发，由封装
+        // 合成）；goal 被接受后 feedbackCallback 收到各步反馈；发送失败（未初始化/
+        // 服务端不可用/类型不匹配）输出 RCLCPP_ERROR（此时回调不会被调用）
+        // 客户端回调对外屏蔽 ClientGoalHandle，以 goalId 为统一身份：
+        //   goalResponseCallback(uint64_t goalId, bool accepted)
+        //   feedbackCallback(uint64_t goalId,
+        //                    const std::shared_ptr<const typename ActionT::Feedback> feedback)
+        //   resultCallback(uint64_t goalId, rclcpp_action::ResultCode code,
+        //                  const std::shared_ptr<const typename ActionT::Result> result)
+        //   code: SUCCEEDED/ABORTED/CANCELED/UNKNOWN（被拒绝时为 UNKNOWN）
+        // 【回调规则】与订阅回调同规则：客户端回调在独立回调组执行，回调须自行保证
+        // 共享数据的线程安全
+        template <typename ActionT, typename GoalResponseCallbackT, typename FeedbackCallbackT, typename ResultCallbackT>
+        uint64_t callActionAsync(const std::string &actionName, const typename ActionT::Goal &goal,
+                                 GoalResponseCallbackT &&goalResponseCallback,
+                                 FeedbackCallbackT &&feedbackCallback, ResultCallbackT &&resultCallback);
+        // 取消指定活跃 goal（goalId 由 callActionAsync 返回）：服务端 cancelCallback
+        // 返回 false 时取消被拒绝，goal 继续执行至正常终结；goal 不存在或已终结返回
+        // false；取消成功后 resultCallback 收到 CANCELED
+        template <typename ActionT>
+        bool cancelGoal(const std::string &actionName, uint64_t goalId);
+        // 取消该 action 的全部活跃 goal（对应原生 async_cancel_all_goals）；
+        // 无活跃 goal 返回 false；各 goal 的 resultCallback 收到 CANCELED（被服务端拒绝
+        // 取消的 goal 除外）
+        template <typename ActionT>
+        bool cancelAllGoals(const std::string &actionName);
+        // 取消该 action 中目标时间戳早于 stamp 的全部 goal（对应原生
+        // async_cancel_goals_before）；无匹配活跃 goal 返回 false
+        template <typename ActionT>
+        bool cancelGoalsBefore(const std::string &actionName, const rclcpp::Time &stamp);
+
     private:
         std::shared_ptr<rclcpp::Node> node_;
         std::shared_ptr<rclcpp::Executor> executor_; // MultiThreadedExecutor
@@ -135,12 +203,19 @@ namespace yomk
         std::map<std::string, std::type_index> subTypes_;
         std::map<std::string, std::shared_ptr<rclcpp::AsyncParametersClient>> paramClients_; // 远程参数客户端（懒创建）
         std::map<uint64_t, std::shared_ptr<rclcpp::node_interfaces::OnSetParametersCallbackHandle>> paramCallbacks_;
-        std::map<std::string, std::shared_ptr<rclcpp::ServiceBase>> serviceServers_;        // 已注册服务端
-        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> serviceGroups_;       // 持有各服务端的独立回调组（节点仅存弱引用）
-        std::map<std::string, std::shared_ptr<rclcpp::ClientBase>> serviceClients_;         // 服务客户端（懒创建）
-        std::map<std::string, std::type_index> serviceClientTypes_;                         // 客户端服务类型（校验）
-        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> serviceClientGroups_; // 持有各客户端的独立回调组
+        std::map<std::string, std::shared_ptr<rclcpp::ServiceBase>> serviceServers_;         // 已注册服务端
+        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> serviceGroups_;        // 持有各服务端的独立回调组（节点仅存弱引用）
+        std::map<std::string, std::shared_ptr<rclcpp::ClientBase>> serviceClients_;          // 服务客户端（懒创建）
+        std::map<std::string, std::type_index> serviceClientTypes_;                          // 客户端服务类型（校验）
+        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> serviceClientGroups_;  // 持有各客户端的独立回调组
+        std::map<std::string, std::shared_ptr<rclcpp_action::ServerBase>> actionServers_;    // 已注册动作服务端
+        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> actionGroups_;         // 持有各动作服务端的独立回调组
+        std::map<std::string, std::shared_ptr<rclcpp_action::ClientBase>> actionClients_;    // 动作客户端（预创建/懒创建）
+        std::map<std::string, std::type_index> actionClientTypes_;                           // 客户端动作类型（校验）
+        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> actionClientGroups_;   // 持有各动作客户端的独立回调组
+        std::map<std::string, std::map<uint64_t, std::shared_ptr<void>>> actionActiveGoals_; // 活跃 goal（goalId → ClientGoalHandle，类型擦除）
         uint64_t paramCallbackNextId_ = 1;
+        uint64_t actionGoalNextId_ = 1;
         mutable std::mutex mtx_;
         std::condition_variable spinExitedCv_; // spin 退出（后台线程或阻塞线程）后通知 shutdown
         bool initialized_ = false;
@@ -156,6 +231,13 @@ namespace yomk
         // 类型不匹配或创建失败返回 nullptr（已输出日志）
         template <typename ServiceT>
         std::shared_ptr<rclcpp::Client<ServiceT>> getOrCreateServiceClient(const std::string &serviceName);
+        // 创建并缓存动作客户端（不加锁，调用方持锁）；不检查服务端可用性，创建失败返回 nullptr（已输出日志）
+        template <typename ActionT>
+        std::shared_ptr<rclcpp_action::Client<ActionT>> createActionClientImpl(const std::string &actionName);
+        // 懒创建动作客户端（不加锁，调用方持锁）：先复用已缓存客户端，否则现场创建并缓存；
+        // 类型不匹配或创建失败返回 nullptr（已输出日志）
+        template <typename ActionT>
+        std::shared_ptr<rclcpp_action::Client<ActionT>> getOrCreateActionClient(const std::string &actionName);
     };
 
     // ---- 模板方法实现（内联于头文件，实例化发生在调用者编译单元） ----
@@ -520,6 +602,280 @@ namespace yomk
                                            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callServiceAsync callback failed: %s", e.what());
                                        }
                                    });
+        return true;
+    }
+
+    // ---- 动作通信接口模板方法实现 ----
+
+    template <typename ActionT, typename GoalCallbackT, typename CancelCallbackT, typename ExecuteCallbackT>
+    bool ROS2Node::createAction(const std::string &actionName, GoalCallbackT &&goalCallback,
+                                CancelCallbackT &&cancelCallback, ExecuteCallbackT &&executeCallback)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createAction [%s] failed: node not initialized", actionName.c_str());
+            return false;
+        }
+        if (actionServers_.find(actionName) != actionServers_.end())
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createAction [%s] failed: action already registered", actionName.c_str());
+            return false;
+        }
+        // goalCallback 返回 int 原样映射原生 GoalResponse 三值（1/2/3），非法值按拒绝处理
+        auto goalCb = [actionName, userGoalCb = std::forward<GoalCallbackT>(goalCallback)](
+                          const rclcpp_action::GoalUUID &, std::shared_ptr<const typename ActionT::Goal> goal)
+        {
+            switch (userGoalCb(goal))
+            {
+            case 2:
+                return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+            case 3:
+                return rclcpp_action::GoalResponse::ACCEPT_AND_DEFER;
+            case 1:
+                return rclcpp_action::GoalResponse::REJECT;
+            default:
+                RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createAction [%s] failed: goalCallback returned invalid value, treated as REJECT", actionName.c_str());
+                return rclcpp_action::GoalResponse::REJECT;
+            }
+        };
+        // cancelCallback 返回 bool 一一映射原生 CancelResponse 二值（true 允许 / false 拒绝）
+        auto cancelCb = [userCancelCb = std::forward<CancelCallbackT>(cancelCallback)](
+                            std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>> goalHandle)
+        {
+            return userCancelCb(goalHandle) ? rclcpp_action::CancelResponse::ACCEPT
+                                            : rclcpp_action::CancelResponse::REJECT;
+        };
+        // 透传给用户：仅 ACCEPT_AND_EXECUTE 时原生会触发；长耗时执行由用户自行开线程
+        auto acceptedCb = [userExecCb = std::forward<ExecuteCallbackT>(executeCallback)](
+                              std::shared_ptr<rclcpp_action::ServerGoalHandle<ActionT>> goalHandle)
+        {
+            userExecCb(goalHandle);
+        };
+        // 每动作服务端独立 MutuallyExclusive group：不阻塞 topic/服务回调
+        auto group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        auto server = rclcpp_action::create_server<ActionT>(node_, actionName, goalCb, cancelCb, acceptedCb,
+                                                            rcl_action_server_get_default_options(), group);
+        if (!server)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createAction [%s] failed: create_server returned null", actionName.c_str());
+            return false;
+        }
+        actionServers_[actionName] = server;
+        actionGroups_[actionName] = group; // 节点内部仅持 group 弱引用，须在此持有 shared_ptr
+        return true;
+    }
+
+    template <typename ActionT>
+    std::shared_ptr<rclcpp_action::Client<ActionT>> ROS2Node::createActionClientImpl(const std::string &actionName)
+    {
+        // 客户端 feedback/result 回调在独立 MutuallyExclusive 组执行，不与 topic/服务回调互相阻塞
+        auto group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        auto client = rclcpp_action::create_client<ActionT>(node_, actionName, group);
+        if (!client)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "action client [%s] failed: create_client returned null", actionName.c_str());
+            return nullptr;
+        }
+        // 创建后立即缓存（不检查服务端可用性）：供 run 前预创建，spin 启动时实体已就绪
+        actionClients_[actionName] = client;
+        actionClientTypes_.insert_or_assign(actionName, std::type_index(typeid(ActionT)));
+        actionClientGroups_[actionName] = group; // 节点内部仅持 group 弱引用，须在此持有 shared_ptr
+        return client;
+    }
+
+    template <typename ActionT>
+    std::shared_ptr<rclcpp_action::Client<ActionT>> ROS2Node::getOrCreateActionClient(const std::string &actionName)
+    {
+        auto it = actionClients_.find(actionName);
+        if (it != actionClients_.end())
+        {
+            auto typeIt = actionClientTypes_.find(actionName);
+            if (typeIt == actionClientTypes_.end() || typeIt->second != std::type_index(typeid(ActionT)))
+            {
+                RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "action client [%s] failed: action type mismatch", actionName.c_str());
+                return nullptr;
+            }
+            return std::static_pointer_cast<rclcpp_action::Client<ActionT>>(it->second);
+        }
+        return createActionClientImpl<ActionT>(actionName);
+    }
+
+    template <typename ActionT>
+    bool ROS2Node::createActionClient(const std::string &actionName)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createActionClient [%s] failed: node not initialized", actionName.c_str());
+            return false;
+        }
+        return createActionClientImpl<ActionT>(actionName) != nullptr;
+    }
+
+    template <typename ActionT, typename GoalResponseCallbackT, typename FeedbackCallbackT, typename ResultCallbackT>
+    uint64_t ROS2Node::callActionAsync(const std::string &actionName, const typename ActionT::Goal &goal,
+                                       GoalResponseCallbackT &&goalResponseCallback,
+                                       FeedbackCallbackT &&feedbackCallback, ResultCallbackT &&resultCallback)
+    {
+        using GoalHandle = rclcpp_action::ClientGoalHandle<ActionT>;
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callActionAsync [%s] failed: node not initialized", actionName.c_str());
+            return 0;
+        }
+        auto client = getOrCreateActionClient<ActionT>(actionName);
+        if (!client)
+        {
+            return 0;
+        }
+        // 发送前检查服务端可用性（客户端已缓存时同样检查，不存在的动作返回 0）
+        if (!client->wait_for_action_server(std::chrono::milliseconds(1000)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callActionAsync [%s] failed: action server not available", actionName.c_str());
+            return 0;
+        }
+        const uint64_t goalId = actionGoalNextId_++;
+        auto userRespCb = std::make_shared<std::decay_t<GoalResponseCallbackT>>(std::forward<GoalResponseCallbackT>(goalResponseCallback));
+        auto userFbCb = std::make_shared<std::decay_t<FeedbackCallbackT>>(std::forward<FeedbackCallbackT>(feedbackCallback));
+        auto userResultCb = std::make_shared<std::decay_t<ResultCallbackT>>(std::forward<ResultCallbackT>(resultCallback));
+        typename rclcpp_action::Client<ActionT>::SendGoalOptions options;
+        // 对外屏蔽 ClientGoalHandle：回调统一以 goalId 标识目标（与返回值/取消接口同身份）
+        options.feedback_callback = [goalId, userFbCb](
+                                        typename GoalHandle::SharedPtr,
+                                        const std::shared_ptr<const typename ActionT::Feedback> feedback)
+        {
+            (*userFbCb)(goalId, feedback);
+        };
+        // 终结时移除活跃记录（保证 cancelGoal 只针对未终结 goal）；以 goalId 通知用户
+        options.result_callback = [this, actionName, goalId, userResultCb](
+                                      const typename GoalHandle::WrappedResult &result)
+        {
+            {
+                std::lock_guard<std::mutex> resultLock(mtx_);
+                auto it = actionActiveGoals_.find(actionName);
+                if (it != actionActiveGoals_.end())
+                {
+                    it->second.erase(goalId);
+                    if (it->second.empty())
+                    {
+                        actionActiveGoals_.erase(it);
+                    }
+                }
+            }
+            (*userResultCb)(goalId, result.code, result.result);
+        };
+        // 接受：记录活跃句柄（供取消）+ 通知 accepted=true；拒绝：通知 accepted=false
+        // + 合成 UNKNOWN 终结通知（原生拒绝时 result_callback 不触发，封装保证回调链必终结）
+        options.goal_response_callback = [this, actionName, goalId, userRespCb, userResultCb](
+                                             typename GoalHandle::SharedPtr goalHandle)
+        {
+            if (goalHandle)
+            {
+                {
+                    std::lock_guard<std::mutex> acceptLock(mtx_);
+                    actionActiveGoals_[actionName][goalId] = goalHandle;
+                }
+                (*userRespCb)(goalId, true);
+                return;
+            }
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "callActionAsync [%s] failed: goal rejected by server", actionName.c_str());
+            (*userRespCb)(goalId, false);
+            (*userResultCb)(goalId, rclcpp_action::ResultCode::UNKNOWN, nullptr);
+        };
+        client->async_send_goal(goal, options);
+        return goalId;
+    }
+
+    template <typename ActionT>
+    bool ROS2Node::cancelGoal(const std::string &actionName, uint64_t goalId)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelGoal [%s] failed: node not initialized", actionName.c_str());
+            return false;
+        }
+        auto activeIt = actionActiveGoals_.find(actionName);
+        if (activeIt == actionActiveGoals_.end())
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelGoal [%s] failed: no active goal", actionName.c_str());
+            return false;
+        }
+        auto goalIt = activeIt->second.find(goalId);
+        if (goalIt == activeIt->second.end())
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelGoal [%s] failed: goal not active", actionName.c_str());
+            return false;
+        }
+        auto clientIt = actionClients_.find(actionName);
+        auto typeIt = actionClientTypes_.find(actionName);
+        if (clientIt == actionClients_.end() || typeIt == actionClientTypes_.end() ||
+            typeIt->second != std::type_index(typeid(ActionT)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelGoal [%s] failed: action type mismatch", actionName.c_str());
+            return false;
+        }
+        auto client = std::static_pointer_cast<rclcpp_action::Client<ActionT>>(clientIt->second);
+        auto goalHandle = std::static_pointer_cast<rclcpp_action::ClientGoalHandle<ActionT>>(goalIt->second);
+        client->async_cancel_goal(goalHandle);
+        return true;
+    }
+
+    template <typename ActionT>
+    bool ROS2Node::cancelAllGoals(const std::string &actionName)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelAllGoals [%s] failed: node not initialized", actionName.c_str());
+            return false;
+        }
+        auto activeIt = actionActiveGoals_.find(actionName);
+        if (activeIt == actionActiveGoals_.end() || activeIt->second.empty())
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelAllGoals [%s] failed: no active goal", actionName.c_str());
+            return false;
+        }
+        auto clientIt = actionClients_.find(actionName);
+        auto typeIt = actionClientTypes_.find(actionName);
+        if (clientIt == actionClients_.end() || typeIt == actionClientTypes_.end() ||
+            typeIt->second != std::type_index(typeid(ActionT)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelAllGoals [%s] failed: action type mismatch", actionName.c_str());
+            return false;
+        }
+        auto client = std::static_pointer_cast<rclcpp_action::Client<ActionT>>(clientIt->second);
+        client->async_cancel_all_goals();
+        return true;
+    }
+
+    template <typename ActionT>
+    bool ROS2Node::cancelGoalsBefore(const std::string &actionName, const rclcpp::Time &stamp)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelGoalsBefore [%s] failed: node not initialized", actionName.c_str());
+            return false;
+        }
+        auto activeIt = actionActiveGoals_.find(actionName);
+        if (activeIt == actionActiveGoals_.end() || activeIt->second.empty())
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelGoalsBefore [%s] failed: no active goal", actionName.c_str());
+            return false;
+        }
+        auto clientIt = actionClients_.find(actionName);
+        auto typeIt = actionClientTypes_.find(actionName);
+        if (clientIt == actionClients_.end() || typeIt == actionClientTypes_.end() ||
+            typeIt->second != std::type_index(typeid(ActionT)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "cancelGoalsBefore [%s] failed: action type mismatch", actionName.c_str());
+            return false;
+        }
+        auto client = std::static_pointer_cast<rclcpp_action::Client<ActionT>>(clientIt->second);
+        client->async_cancel_goals_before(stamp);
         return true;
     }
 

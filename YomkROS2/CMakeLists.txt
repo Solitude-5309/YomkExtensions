@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
-project(YomkROS2 VERSION 0.0.9 LANGUAGES CXX)
+project(YomkROS2 VERSION 0.0.10 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(std_msgs REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -14,7 +15,7 @@ add_library(${PROJECT_NAME} SHARED
     src/ROS2Node.cpp
 )
 target_link_libraries(${PROJECT_NAME}
-    PUBLIC rclcpp::rclcpp std_msgs::std_msgs
+    PUBLIC rclcpp::rclcpp rclcpp_action::rclcpp_action std_msgs::std_msgs
 )
 
 # 安装规则

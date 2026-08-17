@@ -2,6 +2,7 @@
 
 include(CMakeFindDependencyMacro)
 find_dependency(rclcpp)
+find_dependency(rclcpp_action)
 find_dependency(std_msgs)
 
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")

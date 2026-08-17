@@ -130,8 +130,15 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     # 全部用例执行完毕后自行退出
     "TestYomkROS2Service"
     TEST_SERVICE_RESULT=$?
-    if [ ${TEST_TOPIC_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ] || [ ${TEST_SERVICE_RESULT} -ne 0 ]; then
-        echo "存在测试失败：Topic=${TEST_TOPIC_RESULT} Param=${TEST_PARAM_RESULT} Service=${TEST_SERVICE_RESULT}"
+    echo ""
+    echo "========== 运行动作通信测试（非阻塞模式）=========="
+    # 动作测试为前台运行的非阻塞用例：宏单例与远程节点均 run(false) 后台 spin
+    # （feedback/result 回调依赖本地 spin，服务端 goal/cancel/accepted 回调由各自
+    # spin 处理），全部用例执行完毕后自行退出
+    "TestYomkROS2Action"
+    TEST_ACTION_RESULT=$?
+    if [ ${TEST_TOPIC_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ] || [ ${TEST_SERVICE_RESULT} -ne 0 ] || [ ${TEST_ACTION_RESULT} -ne 0 ]; then
+        echo "存在测试失败：Topic=${TEST_TOPIC_RESULT} Param=${TEST_PARAM_RESULT} Service=${TEST_SERVICE_RESULT} Action=${TEST_ACTION_RESULT}"
     fi
 fi
 

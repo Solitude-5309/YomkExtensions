@@ -29,3 +29,7 @@ target_link_libraries(TestYomkROS2Param PRIVATE YomkROS2::YomkROS2 YomkServer::Y
 add_executable(TestYomkROS2Service TestYomkROS2Service.cpp)
 target_link_libraries(TestYomkROS2Service PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer
     std_srvs::std_srvs__rosidl_typesupport_cpp example_interfaces::example_interfaces__rosidl_typesupport_cpp)
+
+add_executable(TestYomkROS2Action TestYomkROS2Action.cpp)
+target_link_libraries(TestYomkROS2Action PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer
+    example_interfaces::example_interfaces__rosidl_typesupport_cpp)

@@ -132,6 +132,12 @@ namespace yomk
             serviceClients_.clear();
             serviceClientTypes_.clear();
             serviceClientGroups_.clear();
+            actionServers_.clear(); // 先销毁动作服务端，再销毁客户端（与订阅/发布、服务同序）
+            actionGroups_.clear();
+            actionClients_.clear();
+            actionClientTypes_.clear();
+            actionClientGroups_.clear();
+            actionActiveGoals_.clear();
         }
 
         // 仅销毁本实例创建的进程级 ROS2 上下文，不干扰用户自行初始化的环境
