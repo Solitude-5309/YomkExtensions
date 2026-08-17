@@ -172,7 +172,7 @@ ExtensionName/
 ### 关键约定
 
 1. 编译为 `SHARED` 库，头文件放 `include/`，实现放 `src/`
-2. CMake 使用 `configure_package_config_file` + `install(EXPORT ...)` 导出配置
+2. CMake 使用 `configure_package_config_file` + `install(EXPORT ...)` 导出配置。**Config 模板防污染**：`ProjectConfig.cmake.in` 必须在 `find_dependency()` **之前**用 `@PACKAGE_INCLUDE_INSTALL_DIR@`/`@PACKAGE_LIB_INSTALL_DIR@` 把路径固化到私有变量，路径检查用内联 `foreach` 而非 `set_and_check` 宏——否则依赖包配置会覆盖全局 `PACKAGE_PREFIX_DIR` 与同名宏，导致 `find_package` 报路径不存在或静默指向错误前缀（模板见 examples.md 示例6）
 3. 安装后其他工程可通过 `find_package(ExtensionName)` 引用
 4. `build.sh` 支持可选编译测试程序（`test/` 有独立 CMakeLists）
 5. 测试程序通过 `YOMK_NEW_SERVICE` 注册服务并验证功能

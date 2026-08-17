@@ -37,6 +37,60 @@ if [ -n "${USER_INSTALL_PREFIX}" ]; then
 fi
 echo "安装目录: ${INSTALL_DIR}"
 
+# ========== 环境检查 ==========
+info() {
+    echo "[INFO] $*"
+}
+
+warn() {
+    echo "[WARN] $*"
+}
+
+check_and_install_deps() {
+    local DEPS=(
+        gcc
+        swig
+        python3-dev
+        build-essential
+        cmake
+    )
+
+    local MISSING=()
+
+    for pkg in "${DEPS[@]}"; do
+        if ! dpkg -l | grep -q "^ii  $pkg "; then
+            MISSING+=("$pkg")
+        fi
+    done
+
+    if [ ${#MISSING[@]} -eq 0 ]; then
+        info "所有依赖已安装，跳过"
+        return
+    fi
+
+    warn "检测到以下依赖未安装：${MISSING[*]}"
+
+    read -p "是否现在安装这些依赖？(y/n，默认 y): " ANSWER
+    ANSWER=${ANSWER:-y}
+
+    if [[ "$ANSWER" =~ ^[Yy]$ ]]; then
+        info "开始安装依赖..."
+        sudo apt update
+        sudo apt install -y "${MISSING[@]}"
+        info "依赖安装完成"
+    else
+        warn "依赖不完整，脚本终止"
+        return 1
+    fi
+}
+
+# 执行环境检查
+check_and_install_deps
+if [ $? -ne 0 ]; then
+    cd "${_ORIG_DIR}"
+    return 1
+fi
+
 # 询问是否编译 test
 read -p "编译测试程序? [Y/n]: " BUILD_TEST
 BUILD_TEST=${BUILD_TEST:-y}
