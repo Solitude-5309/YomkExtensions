@@ -60,7 +60,14 @@ namespace yomk
 // 列出全部参数名
 #define YOMKROS2_LIST_PARAMS() yomk::yomkROS2Node().listParams()
 
-// 远程参数（内部自动创建同步客户端并等待服务，一次调用完成）
+// 预创建远程参数客户端：只创建并缓存 AsyncParametersClient 实体，不检查远端
+// 可用性、不发送请求；【推荐用法】在 YOMKROS2_RUN 之前预创建（创建节点 →
+// 创建客户端 → run → 远程参数接口发送请求），跨节点调用必须如此
+#define YOMKROS2_PARAM_CLIENT(remoteNode) \
+    yomk::yomkROS2Node().createParamClient(remoteNode)
+
+// 远程参数（调用前需已 YOMKROS2_PARAM_CLIENT 预创建对应远程节点的客户端，
+// 且节点已 run 运行；future 同步等待响应，一次调用完成）
 #define YOMKROS2_GET_REMOTE_PARAM(remoteNode, name, out) \
     yomk::yomkROS2Node().getRemoteParam(remoteNode, name, out)
 
@@ -83,7 +90,7 @@ namespace yomk
 // 预创建服务客户端：只创建并缓存客户端实体，不检查服务可用性、不发送请求；
 // 【推荐用法】在 YOMKROS2_RUN 之前预创建（创建节点 → 创建客户端 → run →
 // CALL_SERVICE/CALL_SERVICE_ASYNC 发送请求），跨节点调用必须如此
-#define YOMKROS2_CLIENT(type, serviceName) \
+#define YOMKROS2_SERVICE_CLIENT(type, serviceName) \
     yomk::yomkROS2Node().createServiceClient<type>(serviceName)
 
 // 同步调用服务：返回响应 SharedPtr，失败返回 nullptr（自动建客户端，一次调用完成）；

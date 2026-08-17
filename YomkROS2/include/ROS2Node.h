@@ -86,8 +86,16 @@ namespace yomk
         uint64_t addOnSetParamCallback(std::function<bool(const std::vector<rclcpp::Parameter> &)> cb);
         void removeOnSetParamCallback(uint64_t handleId);
 
-        // 远程参数（内部自动创建异步客户端，以 future 同步等待响应，一次调用完成；
-        // 响应由本节点自身的 spin 处理，故调用前需已 run 运行）
+        // 预创建远程参数客户端：只创建并缓存 AsyncParametersClient 实体（独立
+        // MutuallyExclusive 回调组），不检查远端参数服务可用性、不发送请求；
+        // 未初始化或重复创建返回 false
+        // 【推荐用法】在 run 之前预创建（创建节点 → 创建客户端 → run →
+        // get/set/has/listRemoteParams 发送请求），与服务/动作客户端同理，
+        // 避免 spin 期间动态创建实体
+        bool createParamClient(const std::string &remoteNodeName);
+
+        // 远程参数（以 future 同步等待响应，一次调用完成；调用前需已 createParamClient
+        // 预创建对应远程节点的客户端，且节点已 run 运行——响应由本节点自身的 spin 处理）
         template <typename T>
         bool getRemoteParam(const std::string &remoteNodeName, const std::string &name, T &out);
         template <typename T>
@@ -201,7 +209,7 @@ namespace yomk
         std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> subGroups_; // 持有各订阅的独立回调组（节点仅存弱引用）
         std::map<std::string, std::type_index> pubTypes_;
         std::map<std::string, std::type_index> subTypes_;
-        std::map<std::string, std::shared_ptr<rclcpp::AsyncParametersClient>> paramClients_; // 远程参数客户端（懒创建）
+        std::map<std::string, std::shared_ptr<rclcpp::AsyncParametersClient>> paramClients_; // 远程参数客户端（预创建）
         std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> paramClientGroups_;    // 持有各参数客户端的独立回调组（避免落入默认组）
         std::map<uint64_t, std::shared_ptr<rclcpp::node_interfaces::OnSetParametersCallbackHandle>> paramCallbacks_;
         std::map<std::string, std::shared_ptr<rclcpp::ServiceBase>> serviceServers_;         // 已注册服务端
@@ -223,8 +231,8 @@ namespace yomk
         bool running_ = false;       // run 已启动 spin（后台线程或当前线程阻塞中）
         bool ownRclcppInit_ = false; // 本实例执行过 rclcpp::init，shutdown 时对称调用 rclcpp::shutdown
 
-        // 懒创建远程参数客户端（不加锁，调用方持锁）；失败返回 nullptr（已输出日志）
-        std::shared_ptr<rclcpp::AsyncParametersClient> getOrCreateParamClient(const std::string &remoteNodeName);
+        // 查找已预创建的远程参数客户端（不加锁，调用方持锁）；未 createParamClient 返回 nullptr（已输出日志）
+        std::shared_ptr<rclcpp::AsyncParametersClient> getParamClient(const std::string &remoteNodeName);
         // 创建并缓存服务客户端（不加锁，调用方持锁）；不检查服务可用性，类型不匹配或创建失败返回 nullptr（已输出日志）
         template <typename ServiceT>
         std::shared_ptr<rclcpp::Client<ServiceT>> createServiceClientImpl(const std::string &serviceName);
@@ -401,9 +409,15 @@ namespace yomk
             RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getRemoteParam [%s/%s] failed: node not initialized", remoteNodeName.c_str(), name.c_str());
             return false;
         }
-        auto client = getOrCreateParamClient(remoteNodeName);
+        auto client = getParamClient(remoteNodeName);
         if (!client)
         {
+            return false;
+        }
+        // 发送前检查远端参数服务可用性（预创建的客户端不检查，此处兜底远端未就绪）
+        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "getRemoteParam [%s/%s] failed: service not available", remoteNodeName.c_str(), name.c_str());
             return false;
         }
         // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）
@@ -440,9 +454,15 @@ namespace yomk
             RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "setRemoteParam [%s/%s] failed: node not initialized", remoteNodeName.c_str(), name.c_str());
             return false;
         }
-        auto client = getOrCreateParamClient(remoteNodeName);
+        auto client = getParamClient(remoteNodeName);
         if (!client)
         {
+            return false;
+        }
+        // 发送前检查远端参数服务可用性（预创建的客户端不检查，此处兜底远端未就绪）
+        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "setRemoteParam [%s/%s] failed: service not available", remoteNodeName.c_str(), name.c_str());
             return false;
         }
         // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）

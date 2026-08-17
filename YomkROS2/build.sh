@@ -137,8 +137,32 @@ if [ "${BUILD_TEST}" = "ON" ]; then
     # spin 处理），全部用例执行完毕后自行退出
     "TestYomkROS2Action"
     TEST_ACTION_RESULT=$?
-    if [ ${TEST_TOPIC_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ] || [ ${TEST_SERVICE_RESULT} -ne 0 ] || [ ${TEST_ACTION_RESULT} -ne 0 ]; then
-        echo "存在测试失败：Topic=${TEST_TOPIC_RESULT} Param=${TEST_PARAM_RESULT} Service=${TEST_SERVICE_RESULT} Action=${TEST_ACTION_RESULT}"
+    echo ""
+    echo "========== 运行跨进程集成测试（control_node/exec_node）=========="
+    # 双进程用户参考程序：exec_node（服务端角色）先后台启动并自适应终结
+    # （完成条件满足后自行 shutdown），control_node（客户端角色）前台运行，
+    # 带重试完成远程参数/服务/动作调用与主题发布；此处保留超时 kill 兜底
+    "TestYomkROS2Exec" &
+    TEST_EXEC_PID=$!
+    sleep 1
+    "TestYomkROS2Control"
+    TEST_CONTROL_RESULT=$?
+    TEST_EXEC_WAITED=0
+    while kill -0 ${TEST_EXEC_PID} 2>/dev/null && [ ${TEST_EXEC_WAITED} -lt 20 ]; do
+        sleep 1
+        TEST_EXEC_WAITED=$((TEST_EXEC_WAITED + 1))
+    done
+    if kill -0 ${TEST_EXEC_PID} 2>/dev/null; then
+        echo "TestYomkROS2Exec 超时未退出，强制终止"
+        kill ${TEST_EXEC_PID} 2>/dev/null
+        wait ${TEST_EXEC_PID}
+        TEST_EXEC_RESULT=1
+    else
+        wait ${TEST_EXEC_PID}
+        TEST_EXEC_RESULT=$?
+    fi
+    if [ ${TEST_TOPIC_RESULT} -ne 0 ] || [ ${TEST_PARAM_RESULT} -ne 0 ] || [ ${TEST_SERVICE_RESULT} -ne 0 ] || [ ${TEST_ACTION_RESULT} -ne 0 ] || [ ${TEST_CONTROL_RESULT} -ne 0 ] || [ ${TEST_EXEC_RESULT} -ne 0 ]; then
+        echo "存在测试失败：Topic=${TEST_TOPIC_RESULT} Param=${TEST_PARAM_RESULT} Service=${TEST_SERVICE_RESULT} Action=${TEST_ACTION_RESULT} CrossProcess=Control:${TEST_CONTROL_RESULT}/Exec:${TEST_EXEC_RESULT}"
     fi
 fi
 

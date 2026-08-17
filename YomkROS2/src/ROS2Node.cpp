@@ -244,6 +244,32 @@ namespace yomk
         paramCallbacks_.erase(it);
     }
 
+    bool ROS2Node::createParamClient(const std::string &remoteNodeName)
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!initialized_)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createParamClient [%s] failed: node not initialized", remoteNodeName.c_str());
+            return false;
+        }
+        if (paramClients_.find(remoteNodeName) != paramClients_.end())
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "createParamClient [%s] failed: client already created", remoteNodeName.c_str());
+            return false;
+        }
+        // 异步客户端不 spin 也不占用节点 executor（与 SyncParametersClient 不同），
+        // 响应由本节点自身的 spin 处理；每客户端独立 MutuallyExclusive 回调组
+        // （不传 group 会落入节点默认组，与参数服务及其他客户端相互串行，
+        // 任一阻塞会拖慢全部参数客户端的响应处理）；创建后立即缓存（不检查
+        // 远端可用性）：供 run 前预创建，spin 启动时实体已就绪
+        auto group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        auto client = std::make_shared<rclcpp::AsyncParametersClient>(
+            node_, remoteNodeName, rmw_qos_profile_parameters, group);
+        paramClients_[remoteNodeName] = client;
+        paramClientGroups_[remoteNodeName] = group; // 节点内部仅持 group 弱引用，须在此持有 shared_ptr
+        return true;
+    }
+
     bool ROS2Node::hasRemoteParam(const std::string &remoteNodeName, const std::string &name)
     {
         std::lock_guard<std::mutex> lock(mtx_);
@@ -252,9 +278,15 @@ namespace yomk
             RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "hasRemoteParam [%s/%s] failed: node not initialized", remoteNodeName.c_str(), name.c_str());
             return false;
         }
-        auto client = getOrCreateParamClient(remoteNodeName);
+        auto client = getParamClient(remoteNodeName);
         if (!client)
         {
+            return false;
+        }
+        // 发送前检查远端参数服务可用性（预创建的客户端不检查，此处兜底远端未就绪）
+        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "hasRemoteParam [%s/%s] failed: service not available", remoteNodeName.c_str(), name.c_str());
             return false;
         }
         // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）
@@ -276,9 +308,15 @@ namespace yomk
             RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "listRemoteParams [%s] failed: node not initialized", remoteNodeName.c_str());
             return {};
         }
-        auto client = getOrCreateParamClient(remoteNodeName);
+        auto client = getParamClient(remoteNodeName);
         if (!client)
         {
+            return {};
+        }
+        // 发送前检查远端参数服务可用性（预创建的客户端不检查，此处兜底远端未就绪）
+        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "listRemoteParams [%s] failed: service not available", remoteNodeName.c_str());
             return {};
         }
         // 异步请求 + future 同步等待：响应由本节点自身的 spin 处理（调用前需已 run）
@@ -291,28 +329,15 @@ namespace yomk
         return future.get().names;
     }
 
-    std::shared_ptr<rclcpp::AsyncParametersClient> ROS2Node::getOrCreateParamClient(const std::string &remoteNodeName)
+    std::shared_ptr<rclcpp::AsyncParametersClient> ROS2Node::getParamClient(const std::string &remoteNodeName)
     {
         auto it = paramClients_.find(remoteNodeName);
-        if (it != paramClients_.end())
+        if (it == paramClients_.end())
         {
-            return it->second;
-        }
-        // 异步客户端不 spin 也不占用节点 executor（与 SyncParametersClient 不同），
-        // 响应由本节点自身的 spin 处理，故调用方需已 run 运行；每客户端独立
-        // MutuallyExclusive 回调组（不传 group 会落入节点默认组，与参数服务及其他
-        // 客户端相互串行，任一阻塞会拖慢全部参数客户端的响应处理）
-        auto group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-        auto client = std::make_shared<rclcpp::AsyncParametersClient>(
-            node_, remoteNodeName, rmw_qos_profile_parameters, group);
-        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
-        {
-            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "param client [%s] failed: service not available", remoteNodeName.c_str());
+            RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "param client [%s] failed: client not created, call createParamClient before run first", remoteNodeName.c_str());
             return nullptr;
         }
-        paramClients_[remoteNodeName] = client;
-        paramClientGroups_[remoteNodeName] = group;
-        return client;
+        return it->second;
     }
 
 } // namespace yomk

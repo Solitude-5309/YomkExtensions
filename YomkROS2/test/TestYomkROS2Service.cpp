@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
         YOMK_INFO_TAG("TestYomkROS2Service", "[SERVICE] add_service: 收到请求 a=", request->a, " b=", request->b,
                       " -> 响应 sum=", response->sum);
     };
-    if (!YOMKROS2_SERVICE(AddTwoInts, "add_service", addCb) || !YOMKROS2_CLIENT(AddTwoInts, "add_service"))
+    if (!YOMKROS2_SERVICE(AddTwoInts, "add_service", addCb) || !YOMKROS2_SERVICE_CLIENT(AddTwoInts, "add_service"))
     {
         YOMK_ERROR_TAG("TestYomkROS2Service", "[FAIL] YOMKROS2_SERVICE/CLIENT add_service");
         g_fail++;
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
         YOMK_INFO_TAG("TestYomkROS2Service", "[SERVICE] set_bool_service: 收到请求 data=", (request->data ? "true" : "false"),
                       " -> 响应 success=true");
     };
-    if (!YOMKROS2_SERVICE(SetBool, "set_bool_service", boolCb) || !YOMKROS2_CLIENT(SetBool, "set_bool_service"))
+    if (!YOMKROS2_SERVICE(SetBool, "set_bool_service", boolCb) || !YOMKROS2_SERVICE_CLIENT(SetBool, "set_bool_service"))
     {
         YOMK_ERROR_TAG("TestYomkROS2Service", "[FAIL] YOMKROS2_SERVICE/CLIENT set_bool_service");
         g_fail++;
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
         YOMK_INFO_TAG("TestYomkROS2Service", "[SERVICE] remote_service: 收到请求 a=", request->a, " b=", request->b,
                       " -> 响应 sum=", response->sum);
     };
-    if (!remote.createService<AddTwoInts>("remote_service", mulCb) || !YOMKROS2_CLIENT(AddTwoInts, "remote_service"))
+    if (!remote.createService<AddTwoInts>("remote_service", mulCb) || !YOMKROS2_SERVICE_CLIENT(AddTwoInts, "remote_service"))
     {
         YOMK_ERROR_TAG("TestYomkROS2Service", "[FAIL] 远程服务端注册 remote_service/预创建客户端");
         g_fail++;

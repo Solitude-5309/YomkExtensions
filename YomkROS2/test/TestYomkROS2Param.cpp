@@ -178,7 +178,20 @@ int main(int argc, char *argv[])
         g_pass++;
     }
 
-    // 测试 11：宏运行单例节点（后台 spin，异步客户端 future 的响应依赖本地 spin）；
+    // 测试 11：宏预创建远程参数客户端（run 前创建，首次 true、重复创建 false）；
+    // 远程服务端尚未 run，预创建不检查远端可用性（预期输出一条重复创建的 RCLCPP_ERROR 日志）
+    if (!YOMKROS2_PARAM_CLIENT("remote_node") || YOMKROS2_PARAM_CLIENT("remote_node"))
+    {
+        YOMK_ERROR_TAG("TestYomkROS2Param", "[FAIL] YOMKROS2_PARAM_CLIENT 预创建参数客户端");
+        g_fail++;
+    }
+    else
+    {
+        YOMK_INFO_TAG("TestYomkROS2Param", "[PASS] YOMKROS2_PARAM_CLIENT: remote_node 客户端预创建成功，重复创建返回 false");
+        g_pass++;
+    }
+
+    // 测试 12：宏运行单例节点（后台 spin，异步客户端 future 的响应依赖本地 spin）；
     // 远程服务端运行并声明参数（环境）
     if (!YOMKROS2_RUN(false) || !remote.run(false) || remote.declareParam<int64_t>("remote_int", 7) != 7)
     {
@@ -191,7 +204,7 @@ int main(int argc, char *argv[])
         g_pass++;
     }
 
-    // 测试 12：宏查询远程参数一次调用读出正确值（自动建客户端）
+    // 测试 13：宏查询远程参数一次调用读出正确值（复用预创建客户端）
     int64_t rv = 0;
     if (!YOMKROS2_GET_REMOTE_PARAM("remote_node", "remote_int", rv) || rv != 7)
     {
@@ -204,7 +217,7 @@ int main(int argc, char *argv[])
         g_pass++;
     }
 
-    // 测试 13：宏设置远程参数后查询读到新值（验证设置生效）
+    // 测试 14：宏设置远程参数后查询读到新值（验证设置生效）
     if (!YOMKROS2_SET_REMOTE_PARAM("remote_node", "remote_int", int64_t(8)) ||
         !YOMKROS2_GET_REMOTE_PARAM("remote_node", "remote_int", rv) || rv != 8)
     {
@@ -217,7 +230,7 @@ int main(int argc, char *argv[])
         g_pass++;
     }
 
-    // 测试 14：宏判断远程参数存在/不存在
+    // 测试 15：宏判断远程参数存在/不存在
     if (!YOMKROS2_HAS_REMOTE_PARAM("remote_node", "remote_int") ||
         YOMKROS2_HAS_REMOTE_PARAM("remote_node", "not_exist"))
     {
@@ -230,7 +243,7 @@ int main(int argc, char *argv[])
         g_pass++;
     }
 
-    // 测试 15：宏列出远程参数名包含已声明参数
+    // 测试 16：宏列出远程参数名包含已声明参数
     bool listRemoteOk = false;
     std::string remoteNamesStr;
     const auto remoteNames = YOMKROS2_LIST_REMOTE_PARAMS("remote_node");
@@ -257,7 +270,7 @@ int main(int argc, char *argv[])
         g_pass++;
     }
 
-    // 测试 16：shutdown 干净退出（先关远程服务端，再关单例——单例持有进程级 rclcpp::init）
+    // 测试 17：shutdown 干净退出（先关远程服务端，再关单例——单例持有进程级 rclcpp::init）
     if (!remote.shutdown() || !YOMKROS2_SHUTDOWN())
     {
         YOMK_ERROR_TAG("TestYomkROS2Param", "[FAIL] YOMKROS2_SHUTDOWN 干净退出");

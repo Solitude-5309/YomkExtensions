@@ -29,10 +29,11 @@
 | `listParams()` | 列出全部参数名 | — |
 | `addOnSetParamCallback(cb)` | 注册设置回调 | 回调返回 false 拒绝设置；返回句柄 id 供移除 |
 | `removeOnSetParamCallback(id)` | 移除设置回调 | — |
-| `getRemoteParam<T>(remoteNode, name, out)` | 查询远程参数 | 自动创建异步客户端，future 同步等待响应；需节点已 run 运行 |
-| `setRemoteParam<T>(remoteNode, name, value)` | 设置远程参数 | 自动创建异步客户端，future 同步等待响应；需节点已 run 运行 |
-| `hasRemoteParam(remoteNode, name)` | 远程参数是否存在 | 自动创建异步客户端，future 同步等待响应；需节点已 run 运行 |
-| `listRemoteParams(remoteNode)` | 列出远程参数名 | 自动创建异步客户端，future 同步等待响应；需节点已 run 运行 |
+| `createParamClient(remoteNode)` | 预创建远程参数客户端 | 只创建并缓存 AsyncParametersClient 实体，不检查远端可用性、不发送请求；推荐在 run 前调用（跨节点必须） |
+| `getRemoteParam<T>(remoteNode, name, out)` | 查询远程参数 | 需已 createParamClient 预创建客户端；future 同步等待响应；需节点已 run 运行 |
+| `setRemoteParam<T>(remoteNode, name, value)` | 设置远程参数 | 需已 createParamClient 预创建客户端；future 同步等待响应；需节点已 run 运行 |
+| `hasRemoteParam(remoteNode, name)` | 远程参数是否存在 | 需已 createParamClient 预创建客户端；future 同步等待响应；需节点已 run 运行 |
+| `listRemoteParams(remoteNode)` | 列出远程参数名 | 需已 createParamClient 预创建客户端；future 同步等待响应；需节点已 run 运行 |
 | `createService<T>(service, cb)` | 注册服务端 | 服务名、回调；服务重名返回 false |
 | `createServiceClient<T>(service)` | 预创建服务客户端 | 只创建并缓存客户端实体，不检查服务可用性、不发送请求；推荐在 run 前调用 |
 | `callService<T>(service, request)` | 同步调用服务 | 自动创建客户端 + 等待服务 + 发请求 + future 同步等待响应（一次调用完成）；需节点已 run 运行；失败返回 nullptr |
@@ -74,12 +75,13 @@
 | `YOMKROS2_HAS_PARAM(name)` | 参数是否存在 | — |
 | `YOMKROS2_UNDECLARE_PARAM(name)` | 删除参数 | 带默认值声明的参数为静态类型不可撤销，返回 false |
 | `YOMKROS2_LIST_PARAMS()` | 列出全部参数名 | — |
-| `YOMKROS2_GET_REMOTE_PARAM(remoteNode, name, out)` | 查询远程参数 | 自动创建异步客户端，future 同步等待；需节点已 run |
-| `YOMKROS2_SET_REMOTE_PARAM(remoteNode, name, value)` | 设置远程参数 | 自动创建异步客户端，future 同步等待；需节点已 run |
-| `YOMKROS2_HAS_REMOTE_PARAM(remoteNode, name)` | 远程参数是否存在 | 自动创建异步客户端，future 同步等待；需节点已 run |
-| `YOMKROS2_LIST_REMOTE_PARAMS(remoteNode)` | 列出远程参数名 | 自动创建异步客户端，future 同步等待；需节点已 run |
+| `YOMKROS2_PARAM_CLIENT(remoteNode)` | 预创建远程参数客户端 | 只创建并缓存客户端实体，不发送请求；推荐在 YOMKROS2_RUN 之前调用（跨节点必须） |
+| `YOMKROS2_GET_REMOTE_PARAM(remoteNode, name, out)` | 查询远程参数 | 需已 PARAM_CLIENT 预创建客户端；future 同步等待；需节点已 run |
+| `YOMKROS2_SET_REMOTE_PARAM(remoteNode, name, value)` | 设置远程参数 | 需已 PARAM_CLIENT 预创建客户端；future 同步等待；需节点已 run |
+| `YOMKROS2_HAS_REMOTE_PARAM(remoteNode, name)` | 远程参数是否存在 | 需已 PARAM_CLIENT 预创建客户端；future 同步等待；需节点已 run |
+| `YOMKROS2_LIST_REMOTE_PARAMS(remoteNode)` | 列出远程参数名 | 需已 PARAM_CLIENT 预创建客户端；future 同步等待；需节点已 run |
 | `YOMKROS2_SERVICE(type, service, cb)` | 注册服务端 | 回调体内若含顶层逗号，请先将回调定义为变量再传入 |
-| `YOMKROS2_CLIENT(type, service)` | 预创建服务客户端 | 只创建并缓存客户端实体，不发送请求；推荐在 YOMKROS2_RUN 之前调用（跨节点必须） |
+| `YOMKROS2_SERVICE_CLIENT(type, service)` | 预创建服务客户端 | 只创建并缓存客户端实体，不发送请求；推荐在 YOMKROS2_RUN 之前调用（跨节点必须） |
 | `YOMKROS2_CALL_SERVICE(type, service, request)` | 同步调用服务 | 返回响应 SharedPtr，失败返回 nullptr（自动建客户端，一次调用完成）；需节点已 run |
 | `YOMKROS2_CALL_SERVICE_ASYNC(type, service, request, cb)` | 异步调用服务 | 立即返回，响应就绪时回调收到 Response::SharedPtr |
 | `YOMKROS2_ACTION(type, action, goalCb, cancelCb, execCb)` | 注册动作服务端 | 三回调对应原生 goal/cancel/accepted；回调体内含顶层逗号时先定义为变量再传入 |
@@ -107,7 +109,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install
 source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=~/YomkServer/install
 ```
 
-脚本编译安装主库后自动编译并依次运行 `TestYomkROS2Topic`（主题宏测试，阻塞模式，脚本以 SIGINT 模拟 Ctrl+C 唤醒）、`TestYomkROS2Param`（参数接口宏测试，非阻塞用例）、`TestYomkROS2Service`（服务通信宏测试，非阻塞用例）与 `TestYomkROS2Action`（动作通信宏测试，非阻塞用例），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
+脚本编译安装主库后自动编译并依次运行 `TestYomkROS2Topic`（主题宏测试，阻塞模式，脚本以 SIGINT 模拟 Ctrl+C 唤醒）、`TestYomkROS2Param`（参数接口宏测试，非阻塞用例）、`TestYomkROS2Service`（服务通信宏测试，非阻塞用例）与 `TestYomkROS2Action`（动作通信宏测试，非阻塞用例），最后运行跨进程集成测试（`TestYomkROS2Exec` 服务端角色后台启动 + `TestYomkROS2Control` 客户端角色前台运行，两个独立进程演示真实用户用法），并设置好 LD_LIBRARY_PATH/PATH 环境变量。
 
 ## 工程结构
 
@@ -123,7 +125,9 @@ YomkROS2/
 │   ├── TestYomkROS2Topic.cpp         # 主题宏测试（阻塞模式，Ctrl+C 退出）
 │   ├── TestYomkROS2Param.cpp         # 参数接口宏 API 测试（本地 + 远程参数）
 │   ├── TestYomkROS2Service.cpp       # 服务通信宏 API 测试（服务端注册 + 同步/异步调用）
-│   └── TestYomkROS2Action.cpp        # 动作通信宏 API 测试（服务端三回调 + 异步调用 + 取消）
+│   ├── TestYomkROS2Action.cpp        # 动作通信宏 API 测试（服务端三回调 + 异步调用 + 取消）
+│   ├── TestYomkROS2Control.cpp       # 双进程参考程序：control_node 客户端角色（发主题/设参/调服务/发目标）
+│   └── TestYomkROS2Exec.cpp          # 双进程参考程序：exec_node 服务端角色（收主题/被设参/执行服务/执行动作）
 ├── cmake/
 │   └── ProjectConfig.cmake.in  # CMake 导出配置模板
 ├── CMakeLists.txt              # CMake 构建配置
@@ -238,8 +242,9 @@ node.addOnSetParamCallback([](const std::vector<rclcpp::Parameter> &)
     return false; // 拒绝一切设置
 });
 
-// 4. 远程参数：自动创建异步客户端，future 同步等待响应（一次调用完成）
+// 4. 远程参数：run 前预创建客户端，future 同步等待响应（一次调用完成）
 //    （remote_node 为另一 ROS2Node 实例的节点名；响应由本节点 spin 处理，需已 run）
+node.createParamClient("remote_node");
 node.run(false);
 int64_t rv = 0;
 node.getRemoteParam<int64_t>("remote_node", "speed", rv);
@@ -272,7 +277,7 @@ int main(int argc, char *argv[])
 
     // 3. run 前预创建客户端（只创建实体不发送请求；跨节点调用必须如此，
     //    spin 期间动态创建的客户端可能收不到响应）
-    YOMKROS2_CLIENT(example_interfaces::srv::AddTwoInts, "add_service");
+    YOMKROS2_SERVICE_CLIENT(example_interfaces::srv::AddTwoInts, "add_service");
 
     // 4. 运行节点（客户端 future 的响应依赖本地 spin，需已 run）
     YOMKROS2_RUN(false);

@@ -33,3 +33,14 @@ target_link_libraries(TestYomkROS2Service PRIVATE YomkROS2::YomkROS2 YomkServer:
 add_executable(TestYomkROS2Action TestYomkROS2Action.cpp)
 target_link_libraries(TestYomkROS2Action PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer
     example_interfaces::example_interfaces__rosidl_typesupport_cpp)
+
+# 双进程集成测试（用户参考程序）：control_node 客户端角色 / exec_node 服务端角色
+add_executable(TestYomkROS2Control TestYomkROS2Control.cpp)
+target_link_libraries(TestYomkROS2Control PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer
+    std_msgs::std_msgs std_srvs::std_srvs__rosidl_typesupport_cpp
+    example_interfaces::example_interfaces__rosidl_typesupport_cpp)
+
+add_executable(TestYomkROS2Exec TestYomkROS2Exec.cpp)
+target_link_libraries(TestYomkROS2Exec PRIVATE YomkROS2::YomkROS2 YomkServer::YomkServer
+    std_msgs::std_msgs std_srvs::std_srvs__rosidl_typesupport_cpp
+    example_interfaces::example_interfaces__rosidl_typesupport_cpp)
