@@ -126,6 +126,7 @@ namespace yomk
             subTypes_.clear();
             pubTypes_.clear();
             paramClients_.clear();
+            paramClientGroups_.clear();
             paramCallbacks_.clear();
             serviceServers_.clear(); // 先销毁服务端，再销毁客户端（与订阅/发布同序）
             serviceGroups_.clear();
@@ -298,14 +299,19 @@ namespace yomk
             return it->second;
         }
         // 异步客户端不 spin 也不占用节点 executor（与 SyncParametersClient 不同），
-        // 响应由本节点自身的 spin 处理，故调用方需已 run 运行
-        auto client = std::make_shared<rclcpp::AsyncParametersClient>(node_, remoteNodeName);
+        // 响应由本节点自身的 spin 处理，故调用方需已 run 运行；每客户端独立
+        // MutuallyExclusive 回调组（不传 group 会落入节点默认组，与参数服务及其他
+        // 客户端相互串行，任一阻塞会拖慢全部参数客户端的响应处理）
+        auto group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        auto client = std::make_shared<rclcpp::AsyncParametersClient>(
+            node_, remoteNodeName, rmw_qos_profile_parameters, group);
         if (!client->wait_for_service(std::chrono::milliseconds(1000)))
         {
             RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "param client [%s] failed: service not available", remoteNodeName.c_str());
             return nullptr;
         }
         paramClients_[remoteNodeName] = client;
+        paramClientGroups_[remoteNodeName] = group;
         return client;
     }
 

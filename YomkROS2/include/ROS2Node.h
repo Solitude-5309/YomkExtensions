@@ -202,6 +202,7 @@ namespace yomk
         std::map<std::string, std::type_index> pubTypes_;
         std::map<std::string, std::type_index> subTypes_;
         std::map<std::string, std::shared_ptr<rclcpp::AsyncParametersClient>> paramClients_; // 远程参数客户端（懒创建）
+        std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> paramClientGroups_;    // 持有各参数客户端的独立回调组（避免落入默认组）
         std::map<uint64_t, std::shared_ptr<rclcpp::node_interfaces::OnSetParametersCallbackHandle>> paramCallbacks_;
         std::map<std::string, std::shared_ptr<rclcpp::ServiceBase>> serviceServers_;         // 已注册服务端
         std::map<std::string, std::shared_ptr<rclcpp::CallbackGroup>> serviceGroups_;        // 持有各服务端的独立回调组（节点仅存弱引用）
