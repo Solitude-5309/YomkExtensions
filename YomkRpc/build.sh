@@ -136,6 +136,9 @@ if [ "${BUILD_TEST}" = "ON" ]; then
         echo ""
         echo "存在测试失败：TestRpcTopic=${TEST_SERVICE_RESULT} TestRpcTopicLoan=${TEST_LOAN_RESULT}"
     fi
+    echo ""
+    echo "示例程序 RpcPubHelloWorld/RpcSubHelloWorld 已编译（不参与自动测试）："
+    echo "可另开两个终端分别运行 RpcSubHelloWorld 与 RpcPubHelloWorld 观察发布/订阅"
 fi
 
 # 返回原目录

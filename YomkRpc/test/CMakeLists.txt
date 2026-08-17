@@ -22,3 +22,10 @@ target_link_libraries(TestRpcTopic PRIVATE YomkRpc::YomkRpc YomkServer::YomkServ
 
 add_executable(TestRpcTopicLoan TestRpcTopicLoan.cpp)
 target_link_libraries(TestRpcTopicLoan PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
+
+# 发布/订阅示例程序（用户参考，非断言测试）：另开终端分别运行
+add_executable(RpcPubHelloWorld RpcPubHelloWorld.cpp)
+target_link_libraries(RpcPubHelloWorld PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
+
+add_executable(RpcSubHelloWorld RpcSubHelloWorld.cpp)
+target_link_libraries(RpcSubHelloWorld PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
