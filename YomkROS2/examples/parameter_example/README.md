@@ -14,7 +14,7 @@ colcon build --packages-select parameter_example \
 ## 启动节点
 
 ```
-export LD_LIBRARY_PATH=/home/fastdds/YomkServer/install/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$HOME/YomkServer/install/lib:$LD_LIBRARY_PATH
 
 source install/setup.bash
 

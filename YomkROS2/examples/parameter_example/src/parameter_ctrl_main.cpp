@@ -3,6 +3,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 #include <string>
+#include <thread>
 
 int main(int argc, char **argv)
 {
@@ -14,6 +15,9 @@ int main(int argc, char **argv)
     RCLCPP_INFO(rclcpp::get_logger("parameter_ctrl_node"), "config_path: %s", config_path.c_str());
 
     YOMKROS2_PARAM_CLIENT("parameter_exec_node");
+    YOMKROS2_RUN(false);
+
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // 等待节点进入运行态
 
     if (YOMKROS2_HAS_REMOTE_PARAM("parameter_exec_node", "state"))
     {
@@ -38,8 +42,7 @@ int main(int argc, char **argv)
     {
         RCLCPP_INFO(rclcpp::get_logger("parameter_ctrl_node"), "parameter_exec_node param: %s", param.c_str());
     }
-
-    YOMKROS2_RUN(true);
+    
     YOMKROS2_SHUTDOWN();
     return 0;
 }
