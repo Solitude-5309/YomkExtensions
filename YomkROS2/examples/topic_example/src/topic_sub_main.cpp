@@ -9,6 +9,12 @@ void onMessage(std::shared_ptr<const std_msgs::msg::String> msg)
 int main(int argc, char **argv)
 {
     YOMKROS2_NODE(argc, argv, "topic_sub_node");
+
+    std::string config_path;
+    YOMKROS2_DECLARE_PARAM("config_path", config_path);
+    YOMKROS2_GET_PARAM("config_path", config_path);
+    RCLCPP_INFO(rclcpp::get_logger("topic_sub_node"), "config_path: %s", config_path.c_str());
+
     YOMKROS2_SUB_TOPIC(std_msgs::msg::String, "hello_topic", 10, onMessage);
     YOMKROS2_RUN(true);
     YOMKROS2_SHUTDOWN();

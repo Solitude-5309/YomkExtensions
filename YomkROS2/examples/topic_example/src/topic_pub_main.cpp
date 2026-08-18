@@ -13,7 +13,13 @@ void pubMessage()
 
 int main(int argc, char **argv)
 {
-    YOMKROS2_NODE(argc, argv, "topic_sub_node");
+    YOMKROS2_NODE(argc, argv, "topic_pub_node");
+
+    std::string config_path;
+    YOMKROS2_DECLARE_PARAM("config_path", config_path);
+    YOMKROS2_GET_PARAM("config_path", config_path);
+    RCLCPP_INFO(rclcpp::get_logger("topic_pub_node"), "config_path: %s", config_path.c_str());
+
     YOMKROS2_PUB_TOPIC(std_msgs::msg::String, "hello_topic", 10);
     std::thread pubThread(pubMessage);
     YOMKROS2_RUN(true);

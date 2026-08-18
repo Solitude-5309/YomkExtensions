@@ -1,6 +1,6 @@
 # topic example
 
-## 编译命令
+## 编译包
 
 ```
 
@@ -11,9 +11,10 @@ colcon build --packages-select topic_example \
 
 ```
 
-## launch
+## 启动节点
 
 ```
+export LD_LIBRARY_PATH=/home/fastdds/YomkServer/install/lib:$LD_LIBRARY_PATH
 
 source install/setup.bash
 
@@ -23,7 +24,7 @@ ros2 launch topic_example topic_pub_launch.py
 
 ```
 
-## ros2 命令
+## ros2 测试命令
 
 ```
 
