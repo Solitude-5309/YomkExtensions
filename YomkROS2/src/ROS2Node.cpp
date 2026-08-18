@@ -284,7 +284,7 @@ namespace yomk
             return false;
         }
         // 发送前检查远端参数服务可用性（预创建的客户端不检查，此处兜底远端未就绪）
-        if (!client->wait_for_service(std::chrono::milliseconds(1000)))
+        if (!client->wait_for_service(std::chrono::milliseconds(10000)))
         {
             RCLCPP_ERROR(rclcpp::get_logger("YomkROS2"), "hasRemoteParam [%s/%s] failed: service not available", remoteNodeName.c_str(), name.c_str());
             return false;
