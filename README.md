@@ -17,10 +17,8 @@ YomkExtensions 是 YomkServer 的扩展模块仓库，提供了各种功能丰�
 
 ```
 YomkExtensions/
-├── YomkMath/          # 数学计算扩展（基础运算、高级函数等）
-├── YomkLogAnalyzer/   # 日志分析扩展（日志解析、统计、告警等）
-├── YomkRpc/           # RPC 分布式通信扩展（开发中）
-├── YomkROS2/          # ROS2 通信扩展（开发中）
+├── YomkRpc/           # RPC 分布式通信扩展（FastDDS 发布订阅 + Loan 零拷贝）
+├── YomkROS2/          # ROS2 通信扩展（主题/参数/服务/动作四类通信封装）
 └── ...                # 更多扩展将持续添加
 ```
 
@@ -29,7 +27,7 @@ YomkExtensions/
 ### 1. 编译扩展
 
 ```bash
-cd YomkExtensions/YomkMath
+cd YomkExtensions/YomkRpc
 source build.sh -DCMAKE_PREFIX_PATH=/path/to/YomkServer/install
 ```
 
@@ -37,23 +35,31 @@ source build.sh -DCMAKE_PREFIX_PATH=/path/to/YomkServer/install
 
 ```cmake
 # CMakeLists.txt
-find_package(YomkMath REQUIRED)
+find_package(YomkRpc REQUIRED)
 
 add_executable(MyApp main.cpp)
-target_link_libraries(MyApp PRIVATE YomkMath::YomkMath YomkServer::YomkServer)
+target_link_libraries(MyApp PRIVATE YomkRpc::YomkRpc YomkServer::YomkServer YomkRpcMsg)
 ```
 
 ```cpp
-// main.cpp
-#include <YomkMath/MathService.h>
+// main.cpp（各扩展均提供 API 宏封装，示例统一使用宏 API）
+#include <YomkServer/YomkAPI.h>
+#include <YomkRpc/YomkRpcAPI.h>
+#include <YomkRpcMsg/YomkRpcMsg.hpp>
+#include <YomkRpcMsg/YomkRpcMsgPubSubTypes.hpp>
 
-// 注册服务
-YOMK_NEW_SERVICE(XxxService);
+YOMK_INIT();
+YOMK_NEW_SERVICE(YomkRpcService);
 
-// 使用扩展功能
-YomkResponse resp = YOMK_REQUEST("/MathService/add", 
-    YomkMkPtr(YExtOp, ExtOp{"add", 10.5, 3.2}));
+// 创建节点 + 注册发布主题 + 发布数据
+YOMKRPC_NODE(0, "node0");
+YOMKRPC_PUB_TOPIC("node0", "my_topic", new YomkRpc::MStringPubSubType());
+YomkRpc::MString msg;
+msg.data("hello");
+YOMKRPC_PUB_MSG("node0", "my_topic", &msg);
 ```
+
+各扩展的完整宏 API 与使用示例见子目录 README：[YomkRpc](./YomkRpc/README.md)、[YomkROS2](./YomkROS2/README.md)。
 
 ## 开发规范
 

@@ -58,9 +58,9 @@
 > - `executeCallback(goalHandle)` 在 executor 线程被调用，内部不开线程，用户应自行开线程执行长耗时任务；执行线程中使用原生句柄：`publish_feedback(fb)` / `is_canceling()` / `succeed(result)` / `abort(result)` / `canceled(result)`；用户执行线程的退出时机由用户保证（shutdown 前须退出）
 > - 客户端回调对外屏蔽 ClientGoalHandle，以 goalId 为统一身份：`goalResponseCallback(goalId, accepted)` 必触发一次且先于其余回调（告知目标被接受/拒绝）；`feedbackCallback(goalId, feedback)` 收到各步反馈；`resultCallback(goalId, code, result)` 中 code 为 SUCCEEDED / ABORTED / CANCELED / UNKNOWN（goal 被拒绝时为 UNKNOWN 且 result 为空）
 
-### 宏 API（YomkROSAPI.h）
+### 宏 API（YomkROS2API.h）
 
-基于全局单例 ROS2Node 的宏封装，与原生 ROS2 节点语义一致，仅是调用更简单（`#include <YomkROS2/YomkROSAPI.h>`）：
+基于全局单例 ROS2Node 的宏封装，与原生 ROS2 节点语义一致，仅是调用更简单（`#include <YomkROS2/YomkROS2API.h>`）：
 
 | 宏 | 功能 | 说明 |
 |------|------|------|
@@ -117,7 +117,7 @@ source build.sh -DCMAKE_PREFIX_PATH=~/YomkServer/install -DCMAKE_INSTALL_PREFIX=
 YomkROS2/
 ├── include/
 │   ├── ROS2Node.h           # ROS2 通信封装类（模板方法）
-│   └── YomkROSAPI.h         # 宏封装 API（全局单例简化调用）
+│   └── YomkROS2API.h        # 宏封装 API（全局单例简化调用）
 ├── src/
 │   └── ROS2Node.cpp         # ROS2Node 非模板方法实现
 ├── test/
@@ -137,68 +137,17 @@ YomkROS2/
 
 ## 使用示例
 
-### 基本用法（支持任意 rosidl 类型）
+以下示例统一使用 `YOMKROS2_*` 宏 API（全局单例节点，定义于 `YomkROS2API.h`）；上方 ROS2Node 类接口表仅供需要多节点/自定义生命周期等精细控制时参考。
+
+### 基本用法（主题收发，支持任意 rosidl 类型）
 
 ```cpp
-#include <YomkROS2/ROS2Node.h>
+#include <YomkROS2/YomkROS2API.h>
 #include <std_msgs/msg/string.hpp>
 
 int main(int argc, char *argv[])
 {
-    yomk::ROS2Node node;
-
-    // 1. 初始化（进程级 rclcpp::init 由 ROS2Node 自动处理）
-    node.init(argc, argv, "my_node");
-
-    // 2. 注册订阅主题
-    node.registerSubTopic<std_msgs::msg::String>("chatter", 10,
-        [](std::shared_ptr<const std_msgs::msg::String> msg)
-        {
-            // 收到消息 msg->data
-        });
-
-    // 3. 注册发布主题
-    node.registerPubTopic<std_msgs::msg::String>("chatter", 10);
-
-    // 4. 运行节点：run(false) 后台线程运行立即返回；
-    //    run(true) 阻塞当前线程直至 shutdown()（适合主线程直接运行）
-    node.run(false);
-
-    // 5. 发布数据
-    std_msgs::msg::String msg;
-    msg.data = "hello";
-    node.publish<std_msgs::msg::String>("chatter", msg);
-
-    // 6. 退出前显式销毁
-    node.shutdown();
-    return 0;
-}
-```
-
-### 自定义数据类型
-
-模板方法内联在 `ROS2Node.h`，用户工程 include 后可用任意 rosidl 自定义类型实例化：
-
-```cpp
-#include <YomkROS2/ROS2Node.h>
-#include <my_pkg/msg/my_custom_msg.hpp>  // 用户自定义 rosidl 类型
-
-yomk::ROS2Node node;
-node.init(argc, argv, "custom_node");
-node.registerPubTopic<MyCustomMsg>("custom_topic", 10);
-MyCustomMsg msg;                          // 直接传入自定义类型
-node.publish<MyCustomMsg>("custom_topic", msg);
-```
-
-### 宏 API 用法
-
-```cpp
-#include <YomkROS2/YomkROSAPI.h>
-#include <std_msgs/msg/string.hpp>
-
-int main(int argc, char *argv[])
-{
-    // 1. 初始化节点（仅 init，不启动运行）
+    // 1. 初始化节点（仅 init，不启动运行；进程级 rclcpp::init 由封装自动处理）
     YOMKROS2_NODE(argc, argv, "my_node");
 
     // 2. 注册订阅主题（回调体内若含顶层逗号，先定义为变量再传入）
@@ -214,7 +163,8 @@ int main(int argc, char *argv[])
     msg.data = "hello";
     YOMKROS2_PUB_MSG("chatter", msg);
 
-    // 4. 阻塞运行直至 shutdown（典型 main 用法，防止程序退出）
+    // 4. 阻塞运行直至 shutdown（典型 main 用法，防止程序退出）；
+    //    也可 YOMKROS2_RUN(false) 后台线程运行立即返回
     YOMKROS2_RUN(true);
 
     // 5. 退出前显式销毁（run 返回后执行）
@@ -223,37 +173,64 @@ int main(int argc, char *argv[])
 }
 ```
 
-> 阻塞模式下 publish 需在回调或其他线程中进行；shutdown 可由信号处理或辅助线程触发。精细控制（多节点、自定义生命周期）请使用 ROS2Node 类。
+> 阻塞模式下 publish 需在回调或其他线程中进行；shutdown 可由信号处理或辅助线程触发。
+
+### 自定义数据类型
+
+宏的 type 参数可传任意 rosidl 类型（含用户自定义类型），封装模板在调用者编译单元实例化：
+
+```cpp
+#include <YomkROS2/YomkROS2API.h>
+#include <my_pkg/msg/my_custom_msg.hpp>  // 用户自定义 rosidl 类型
+using MyCustomMsg = my_pkg::msg::MyCustomMsg;
+
+int main(int argc, char *argv[])
+{
+    YOMKROS2_NODE(argc, argv, "custom_node");
+    YOMKROS2_PUB_TOPIC(MyCustomMsg, "custom_topic", 10);
+    YOMKROS2_RUN(false);
+
+    MyCustomMsg msg;                        // 直接传入自定义类型
+    YOMKROS2_PUB_MSG("custom_topic", msg);
+
+    YOMKROS2_SHUTDOWN();
+    return 0;
+}
+```
 
 ### 参数用法（一次调用完成）
 
 ```cpp
-// 1. 声明参数并立即取到值（首次返回默认值，已存在返回现有值，幂等）
-int64_t speed = node.declareParam<int64_t>("speed", 30);
+#include <YomkROS2/YomkROS2API.h>
 
-// 2. 查询/设置参数
-int64_t v = 0;
-node.getParam<int64_t>("speed", v);
-node.setParam<int64_t>("speed", 60);
-
-// 3. 设置拦截：回调返回 false 拒绝本次设置
-node.addOnSetParamCallback([](const std::vector<rclcpp::Parameter> &)
+int main(int argc, char *argv[])
 {
-    return false; // 拒绝一切设置
-});
+    YOMKROS2_NODE(argc, argv, "my_node");
 
-// 4. 远程参数：run 前预创建客户端，future 同步等待响应（一次调用完成）
-//    （remote_node 为另一 ROS2Node 实例的节点名；响应由本节点 spin 处理，需已 run）
-node.createParamClient("remote_node");
-node.run(false);
-int64_t rv = 0;
-node.getRemoteParam<int64_t>("remote_node", "speed", rv);
-node.setRemoteParam<int64_t>("remote_node", "speed", 80);
-node.hasRemoteParam("remote_node", "speed");
-node.listRemoteParams("remote_node");
+    // 1. 声明参数并立即取到值（首次返回默认值，已存在返回现有值，幂等）
+    int64_t speed = YOMKROS2_DECLARE_PARAM("speed", int64_t(30));
+
+    // 2. 查询/设置参数
+    int64_t v = 0;
+    YOMKROS2_GET_PARAM("speed", v);
+    YOMKROS2_SET_PARAM("speed", int64_t(60));
+
+    // 3. 远程参数：run 前预创建客户端，future 同步等待响应（一次调用完成）
+    //    （remote_node 为另一节点名；响应由本节点 spin 处理，需已 run）
+    YOMKROS2_PARAM_CLIENT("remote_node");
+    YOMKROS2_RUN(false);
+    int64_t rv = 0;
+    YOMKROS2_GET_REMOTE_PARAM("remote_node", "speed", rv);
+    YOMKROS2_SET_REMOTE_PARAM("remote_node", "speed", int64_t(80));
+    YOMKROS2_HAS_REMOTE_PARAM("remote_node", "speed");
+    YOMKROS2_LIST_REMOTE_PARAMS("remote_node");
+
+    YOMKROS2_SHUTDOWN();
+    return 0;
+}
 ```
 
-> 宏用法对应 `YOMKROS2_DECLARE_PARAM` / `YOMKROS2_GET_PARAM` / `YOMKROS2_SET_REMOTE_PARAM` 等（见宏表）。参数接口失败时输出 `RCLCPP_ERROR` 日志，成功无输出。
+> 参数接口失败时输出 `RCLCPP_ERROR` 日志，成功无输出；set 拦截回调（addOnSetParamCallback）无宏封装，需要时使用 ROS2Node 类接口。
 
 ### 服务通信用法（一次调用完成）
 
@@ -382,12 +359,13 @@ int main(int argc, char *argv[])
 
 ## 开发状态
 
-- [x] 基础框架搭建完成
-- [x] CMake 构建系统集成
-- [x] ROS2 集成（ROS2Node 类：发布/订阅/节点管理）
-- [x] 参数接口（ROS2Node 类：本地参数管理 + 远程参数客户端）
-- [x] 服务通信接口（ROS2Node 类：服务端注册 + 客户端同步/异步调用）
-- [x] 动作通信接口（ROS2Node 类：服务端三回调 + 客户端异步调用 + 取消，完整保留原生 rclcpp_action 能力）
+- ✅ 基础框架搭建完成
+- ✅ CMake 构建系统集成
+- ✅ ROS2 集成（发布/订阅/节点管理，ROS2Node 类 + 宏 API）
+- ✅ 参数接口（本地参数管理 + 远程参数客户端预创建）
+- ✅ 服务通信接口（服务端注册 + 客户端同步/异步调用）
+- ✅ 动作通信接口（服务端三回调 + 客户端异步调用 + 取消，完整保留原生 rclcpp_action 能力）
+- ✅ 双进程参考程序（TestYomkROS2Control/TestYomkROS2Exec，四类通信跨进程演示）
 
 ## License
 
