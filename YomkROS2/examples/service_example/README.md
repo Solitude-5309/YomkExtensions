@@ -4,7 +4,7 @@
 
 ```
 
-colcon build --packages-select parameter_example \
+colcon build --packages-select service_example \
   --cmake-args \
     "-DCMAKE_PREFIX_PATH=${HOME}/YomkServer/install" \
     "-DCMAKE_BUILD_TYPE=Release"
@@ -17,8 +17,8 @@ colcon build --packages-select parameter_example \
 export LD_LIBRARY_PATH=$HOME/YomkServer/install/lib:$LD_LIBRARY_PATH
 source install/setup.bash
 
-ros2 launch parameter_example parameter_exec_launch.py
-ros2 launch parameter_example parameter_ctrl_launch.py
+ros2 launch service_example service_exec_launch.py
+ros2 launch service_example service_ctrl_launch.py
 
 ```
 
