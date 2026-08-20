@@ -11,8 +11,7 @@ using AddTwoInts = example_interfaces::srv::AddTwoInts;
 void addCb(const std::shared_ptr<AddTwoInts::Request> request, std::shared_ptr<AddTwoInts::Response> response)
 {
     response->sum = request->a + request->b;
-    RCLCPP_INFO(rclcpp::get_logger("service_exec_node"), "[SERVICE] add_service: 收到请求 a=%d b=%d", request->a, request->b,
-                " -> 响应 sum=%d", response->sum);
+    RCLCPP_INFO(rclcpp::get_logger("service_exec_node"), "[SERVICE] add_service: 收到请求 a=%ld b=%ld -> 响应 sum=%ld", request->a, request->b, response->sum);
     RCLCPP_INFO(rclcpp::get_logger("service_exec_node"), "[SERVICE] add_service: 响应已发送");
 };
 
@@ -26,6 +25,7 @@ int main(int argc, char **argv)
     RCLCPP_INFO(rclcpp::get_logger("service_exec_node"), "config_path: %s", config_path.c_str());
 
     YOMKROS2_SERVICE(AddTwoInts, "add_service", addCb);
+    RCLCPP_INFO(rclcpp::get_logger("service_exec_node"), "[SERVICE] add_service已启动");
 
     YOMKROS2_RUN(true);
     YOMKROS2_SHUTDOWN();

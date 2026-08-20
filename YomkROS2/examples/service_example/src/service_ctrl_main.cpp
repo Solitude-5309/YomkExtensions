@@ -19,7 +19,7 @@ static void onSignal(int)
 
 void asyncCb(AddTwoInts::Response::SharedPtr resp)
 {
-    RCLCPP_INFO(rclcpp::get_logger("service_ctrl_node"), "[ASYNC] 异步回调收到响应: sum=%ld", resp->sum);
+    RCLCPP_INFO(rclcpp::get_logger("service_ctrl_node"), "[ASYNC] call add_service: 5 + 6 sum=%ld", resp->sum);
 };
 
 int main(int argc, char **argv)
